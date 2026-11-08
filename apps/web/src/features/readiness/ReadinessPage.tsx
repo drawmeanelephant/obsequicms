@@ -1,8 +1,18 @@
+import type { ObsequiousClient } from '@obsequious/contracts';
+
+export type ReadinessPageProps = {
+  /**
+   * The injected application client (docs/api.md#prototype-composition).
+   * Failures reject with the shared `ApiError`; the page never substitutes
+   * demo data for a failed request.
+   */
+  client: ObsequiousClient;
+};
+
 /**
  * Stable Site Readiness feature placeholder. P04 implements the workspace.
- * P01 adds the `client` prop typed as the shared `ObsequiousClient`.
  */
-export function ReadinessPage() {
+export function ReadinessPage(_props: ReadinessPageProps) {
   return (
     <section aria-labelledby="readiness-heading">
       <h2 id="readiness-heading">Site readiness</h2>

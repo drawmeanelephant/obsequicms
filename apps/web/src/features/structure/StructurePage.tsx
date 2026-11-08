@@ -1,8 +1,15 @@
+import type { ObsequiousClient } from '@obsequious/contracts';
+
 export type StructurePageProps = {
   /**
+   * The injected application client (docs/api.md#prototype-composition).
+   * Failures reject with the shared `ApiError`; the page never substitutes
+   * demo data for a failed request.
+   */
+  client: ObsequiousClient;
+  /**
    * Which Structure view to open initially. Values are fixed by the
-   * prototype composition contract (docs/api.md#prototype-composition).
-   * P01 adds the `client` prop typed as the shared `ObsequiousClient`.
+   * prototype composition contract. The default is `outline`.
    */
   initialView?: 'outline' | 'inventory';
 };

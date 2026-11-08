@@ -1,8 +1,12 @@
 /**
- * Shared Obsequious API contracts.
+ * Shared Obsequious API contracts (docs/api.md).
  *
- * Placeholder entry point. P01 implements the Zod schemas, inferred types,
- * typed API errors, and the `ObsequiousClient` interface defined in
- * docs/api.md. Consumers must not invent per-feature API shapes.
+ * Application view records and the client boundary. Raw Boris producer
+ * parsers are owned by P06 server adapters, not by this package.
  */
-export const CONTRACTS_STATUS = 'placeholder: implemented by P01' as const;
+export * from './ids';
+export * from './errors';
+export * from './pages';
+export * from './jobs';
+export * from './readiness';
+export * from './client';
