@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "0.2.0",
+  "compiler": "boris/0.9.0",
+  "contentRoot": "content",
+  "pageCount": 4,
+  "pages": [
+    {
+      "index": 0,
+      "id": "about",
+      "sourcePath": "about.md",
+      "role": "satellite",
+      "parent": "index",
+      "title": "About",
+      "status": null
+    },
+    {
+      "index": 1,
+      "id": "guides/ferns",
+      "sourcePath": "guides/ferns.md",
+      "role": "satellite",
+      "parent": "index",
+      "title": "Ferns of the valley",
+      "status": "published"
+    },
+    {
+      "index": 2,
+      "id": "guides/ferns-care",
+      "sourcePath": "guides/ferns-care.md",
+      "role": "satellite",
+      "parent": "guides/ferns",
+      "title": "Caring for ferns",
+      "status": "draft"
+    },
+    {
+      "index": 3,
+      "id": "index",
+      "sourcePath": "index.md",
+      "role": "trunk",
+      "parent": null,
+      "title": "Field Notes",
+      "status": null
+    }
+  ]
+}

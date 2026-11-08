@@ -1,0 +1,29 @@
+{
+  "format": "obsequious-boris-provenance",
+  "schema_version": 1,
+  "recorded": "2026-11-08",
+  "compilerId": "boris/0.9.0",
+  "sourceRevision": "c50d8622bd407bcb5f559a4d7ed5da440a2259ec",
+  "binary": {
+    "name": "boris",
+    "sha256": "9d2e3f0a07524ffe479287c8088796b4bb2de497838866734fefda21c6f34d8c",
+    "platform": "Darwin-arm64",
+    "buildInfo": {
+      "format": "boris-build-info",
+      "schemaVersion": "1",
+      "version": "boris/0.9.0",
+      "vcsRevision": "c50d8622"
+    }
+  },
+  "kit": {
+    "format": "boris-agent-kit",
+    "schema_version": 1,
+    "repository": "drawmeanelephant/boris",
+    "commit": "c50d8622bd407bcb5f559a4d7ed5da440a2259ec",
+    "dirty": false,
+    "zigVersion": "0.17.1",
+    "archiveSha256": "39b5be8ef5bd132f5c22495a415de863ae071d62bed7732dd8250cc042900602"
+  },
+  "acquiredVia": "scripts/agent-pack.sh run in a detached git worktree at the pinned revision (boris source and dependency pins unchanged); binaries are not committed to this repository",
+  "notes": "The vcsRevision token is opaque provenance text in short form; the full source revision is recorded by the kit manifest. The previously observed dirty boris/0.8.2 binary is not accepted evidence for this baseline."
+}

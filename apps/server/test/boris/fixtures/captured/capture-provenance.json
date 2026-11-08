@@ -1,0 +1,20 @@
+{
+  "format": "obsequious-captured-artifacts",
+  "schema_version": 1,
+  "captured": "2026-11-08",
+  "binarySha256": "9d2e3f0a07524ffe479287c8088796b4bb2de497838866734fefda21c6f34d8c",
+  "sourceRevision": "c50d8622bd407bcb5f559a4d7ed5da440a2259ec",
+  "compilerId": "boris/0.9.0",
+  "fixture": "apps/server/test/boris/fixtures/site copied into a unique temporary workspace; all six allowlisted operations ran successfully",
+  "files": {
+    "manifest.json": "build --input content --out .obsequious/ir",
+    "graph.json": "build --input content --out .obsequious/ir",
+    "completion.json": "build --input content --out .obsequious/ir",
+    "build-report.json": "build --input content --out .obsequious/ir",
+    "html.json": "build --profile boris.json --report .obsequious/html.json",
+    "validate.json": "validate --profile boris.json --report .obsequious/validate.json",
+    "check.json": "check --input content --format json --report .obsequious/check.json",
+    "impact.json": "impact guides/ferns --input content --format json --report .obsequious/impact.json"
+  },
+  "notes": "Captured verbatim from the pinned binary. contentRoot/outDir strings inside build-report.json are absolute capture-time paths kept as produced; no bytes were rewritten to resemble demo records."
+}

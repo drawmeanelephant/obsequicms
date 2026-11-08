@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "0.2.0",
+  "frozen": true,
+  "nodes": [
+    {
+      "index": 0,
+      "id": "about",
+      "sourcePath": "about.md",
+      "role": "satellite",
+      "parent": "index",
+      "parentIndex": 3,
+      "title": "About",
+      "status": null,
+      "tags": [],
+      "bodyOffset": 35
+    },
+    {
+      "index": 1,
+      "id": "guides/ferns",
+      "sourcePath": "guides/ferns.md",
+      "role": "satellite",
+      "parent": "index",
+      "parentIndex": 3,
+      "title": "Ferns of the valley",
+      "status": "published",
+      "tags": ["plants", "guides"],
+      "bodyOffset": 90
+    },
+    {
+      "index": 2,
+      "id": "guides/ferns-care",
+      "sourcePath": "guides/ferns-care.md",
+      "role": "satellite",
+      "parent": "guides/ferns",
+      "parentIndex": 1,
+      "title": "Caring for ferns",
+      "status": "draft",
+      "tags": [],
+      "bodyOffset": 67
+    },
+    {
+      "index": 3,
+      "id": "index",
+      "sourcePath": "index.md",
+      "role": "trunk",
+      "parent": null,
+      "parentIndex": null,
+      "title": "Field Notes",
+      "status": null,
+      "tags": [],
+      "bodyOffset": 27
+    }
+  ],
+  "edges": [
+    {
+      "from": {
+        "type": "page",
+        "value": "about"
+      },
+      "to": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "kind": "reference"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "about"
+      },
+      "to": {
+        "type": "page",
+        "value": "index"
+      },
+      "kind": "parent"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "to": {
+        "type": "page",
+        "value": "guides/ferns-care"
+      },
+      "kind": "reference"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "to": {
+        "type": "page",
+        "value": "index"
+      },
+      "kind": "parent"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "to": {
+        "type": "source",
+        "value": "includes/watering-note.md"
+      },
+      "kind": "include"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "guides/ferns-care"
+      },
+      "to": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "kind": "parent"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "index"
+      },
+      "to": {
+        "type": "page",
+        "value": "about"
+      },
+      "kind": "reference"
+    },
+    {
+      "from": {
+        "type": "page",
+        "value": "index"
+      },
+      "to": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "kind": "reference"
+    }
+  ],
+  "reverseIndex": [
+    {
+      "target": {
+        "type": "page",
+        "value": "about"
+      },
+      "incomingEdges": [6]
+    },
+    {
+      "target": {
+        "type": "page",
+        "value": "guides/ferns"
+      },
+      "incomingEdges": [0, 5, 7]
+    },
+    {
+      "target": {
+        "type": "page",
+        "value": "guides/ferns-care"
+      },
+      "incomingEdges": [2]
+    },
+    {
+      "target": {
+        "type": "page",
+        "value": "index"
+      },
+      "incomingEdges": [1, 3]
+    },
+    {
+      "target": {
+        "type": "source",
+        "value": "includes/watering-note.md"
+      },
+      "incomingEdges": [4]
+    }
+  ],
+  "nav": [
+    {
+      "index": 0,
+      "id": "about",
+      "breadcrumb": [3, 0],
+      "children": [],
+      "siblings": [1]
+    },
+    {
+      "index": 1,
+      "id": "guides/ferns",
+      "breadcrumb": [3, 1],
+      "children": [2],
+      "siblings": [0]
+    },
+    {
+      "index": 2,
+      "id": "guides/ferns-care",
+      "breadcrumb": [3, 1, 2],
+      "children": [],
+      "siblings": []
+    },
+    {
+      "index": 3,
+      "id": "index",
+      "breadcrumb": [3],
+      "children": [0, 1],
+      "siblings": []
+    }
+  ]
+}

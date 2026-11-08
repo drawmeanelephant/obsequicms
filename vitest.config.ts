@@ -14,6 +14,14 @@ export default defineConfig({
             'apps/server/test/**/*.test.ts',
             'packages/contracts/**/*.test.ts',
           ],
+          // The real-compiler gate runs only through `npm run test:boris`
+          // (vitest.boris.config.ts) with a required BORIS_BIN. It must not
+          // silently skip — or run — in the standard suite.
+          exclude: [
+            ...configDefaults.exclude,
+            '**/*.e2e.ts',
+            'apps/server/test/boris/compiler-gate.test.ts',
+          ],
         },
       },
       {

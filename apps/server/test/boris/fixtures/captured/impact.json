@@ -1,0 +1,32 @@
+{
+  "format": "boris-documentation-intelligence",
+  "schemaVersion": "0.2.0",
+  "compiler": "boris/0.9.0",
+  "input": "content",
+  "summary": {
+    "pages": 4,
+    "roots": 1,
+    "satellites": 3,
+    "sourceEndpoints": 1,
+    "edgeCounts": {
+      "incoming": {
+        "pages": {"parent": 3, "include": 0, "reference": 4},
+        "sources": {"parent": 0, "include": 1, "reference": 0}
+      },
+      "outgoing": {
+        "pages": {"parent": 3, "include": 1, "reference": 4},
+        "sources": {"parent": 0, "include": 0, "reference": 0}
+      }
+    },
+    "unreferencedPages": 1,
+    "hotspots": 0
+  },
+  "nodes": [{"type":"page","id":"about","sourcePath":"about.md","parent":"index"},{"type":"page","id":"guides/ferns","sourcePath":"guides/ferns.md","parent":"index"},{"type":"page","id":"guides/ferns-care","sourcePath":"guides/ferns-care.md","parent":"guides/ferns"},{"type":"page","id":"index","sourcePath":"index.md","parent":null}],
+  "edges": [{"from":{"type":"page","value":"about"},"to":{"type":"page","value":"guides/ferns"},"kind":"reference"},{"from":{"type":"page","value":"about"},"to":{"type":"page","value":"index"},"kind":"parent"},{"from":{"type":"page","value":"guides/ferns"},"to":{"type":"page","value":"guides/ferns-care"},"kind":"reference"},{"from":{"type":"page","value":"guides/ferns"},"to":{"type":"page","value":"index"},"kind":"parent"},{"from":{"type":"page","value":"guides/ferns"},"to":{"type":"source","value":"includes/watering-note.md"},"kind":"include"},{"from":{"type":"page","value":"guides/ferns-care"},"to":{"type":"page","value":"guides/ferns"},"kind":"parent"},{"from":{"type":"page","value":"index"},"to":{"type":"page","value":"about"},"kind":"reference"},{"from":{"type":"page","value":"index"},"to":{"type":"page","value":"guides/ferns"},"kind":"reference"}],
+  "sourceLocations": [{"type":"page","value":"about","sourcePath":"about.md","line":1,"column":1},{"type":"page","value":"guides/ferns","sourcePath":"guides/ferns.md","line":1,"column":1},{"type":"page","value":"guides/ferns-care","sourcePath":"guides/ferns-care.md","line":1,"column":1},{"type":"page","value":"index","sourcePath":"index.md","line":1,"column":1}],
+  "pages": [{"id":"about","parent":"index"},{"id":"guides/ferns","parent":"index"},{"id":"guides/ferns-care","parent":"guides/ferns"},{"id":"index","parent":null}],
+  "sources": ["includes/watering-note.md"],
+  "findings": [{"code":"unreferenced_page","type":"page","value":"index","count":0,"sourcePath":"index.md","line":1,"column":1}],
+  "impact": [{"type":"page","value":"about"},{"type":"page","value":"guides/ferns-care"},{"type":"page","value":"index"}],
+  "diagnostics": []
+}

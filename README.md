@@ -61,7 +61,17 @@ npm run dev:demo   # labeled demo prototype on http://127.0.0.1:5173
 npm run dev:server # loopback-only health endpoint on http://127.0.0.1:8787
 ```
 
-Real compiler tests arrive with P06 as `npm run test:boris`.
+The real compiler gate runs separately and requires a pinned Boris binary:
+
+```sh
+BORIS_BIN=/absolute/path/to/pinned/boris npm run test:boris
+```
+
+A missing or incompatible binary fails the gate instead of skipping it.
+See [the P06 provenance record](apps/server/test/boris/provenance/boris-0.9.0.json)
+for the recorded compiler build and
+[the P06 report](docs/work-reports/P06.md) for the real-versus-stub evidence
+separation.
 
 ## Repository status
 

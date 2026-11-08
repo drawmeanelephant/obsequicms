@@ -1,0 +1,47 @@
+{
+  "format": "boris-completion-index",
+  "schema_version": 1,
+  "compiler_id": "boris/0.9.0",
+  "frozen": true,
+  "entities": [
+    {
+      "id": "about",
+      "title": "About",
+      "parent": "index",
+      "role": "satellite",
+      "status": null,
+      "tags": [],
+      "relations": []
+    },
+    {
+      "id": "guides/ferns",
+      "title": "Ferns of the valley",
+      "parent": "index",
+      "role": "satellite",
+      "status": "published",
+      "tags": ["plants", "guides"],
+      "relations": []
+    },
+    {
+      "id": "guides/ferns-care",
+      "title": "Caring for ferns",
+      "parent": "guides/ferns",
+      "role": "satellite",
+      "status": "draft",
+      "tags": [],
+      "relations": []
+    },
+    {
+      "id": "index",
+      "title": "Field Notes",
+      "parent": null,
+      "role": "trunk",
+      "status": null,
+      "tags": [],
+      "relations": []
+    }
+  ],
+  "relation_kinds": ["depends_on", "implements", "relates_to", "supersedes"],
+  "parent_targets": ["guides/ferns", "index"],
+  "layout_slots": ["backlinks", "breadcrumb", "children", "content", "footer", "metadata", "nav", "relations", "title", "toc"]
+}

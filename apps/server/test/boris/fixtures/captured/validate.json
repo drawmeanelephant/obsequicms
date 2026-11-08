@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "html-build-report-0.2.0",
+  "compilerId": "boris/0.9.0",
+  "vcsRevision": "c50d8622",
+  "ok": true,
+  "contentRoot": "/private/tmp/boris-probe/site/content",
+  "outDir": "/private/tmp/boris-probe/site/dist",
+  "errorCount": 0,
+  "diagnostics": []
+}

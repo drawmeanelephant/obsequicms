@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspace @obsequious/contracts && npm run typecheck --workspace @obsequious/server && npm run typecheck --workspace @obsequious/web",
     "test": "vitest run",
+    "test:boris": "vitest run --config vitest.boris.config.ts",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
