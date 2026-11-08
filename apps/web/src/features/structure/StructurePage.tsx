@@ -20,7 +20,7 @@ export type StructurePageProps = {
 export function StructurePage({ initialView = 'outline' }: StructurePageProps) {
   return (
     <section aria-labelledby="structure-heading" data-view={initialView}>
-      <h2 id="structure-heading">Structure</h2>
+      <h1 id="structure-heading">Structure</h1>
       <p>
         Not connected: this is a project-scaffold placeholder. It shows no
         pages and performs no requests.

@@ -1,12 +1,52 @@
-/* Minimal scaffold styling. P02 replaces this with the Astryx neutral theme
-   and product layout. */
-:root {
-  color-scheme: light;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  line-height: 1.5;
+/* Astryx reset and base styles (cascade layers; see the Astryx
+   getting-started guide). Product-specific layout follows unlayered. */
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+
+/* ---- Obsequious product layout (plain CSS per the architecture) ---- */
+
+/* Persistent demo-data notice in the AppShell banner slot. */
+.demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.375rem 1rem;
+  border-block-end: 1px solid var(--color-border);
+  background: var(--color-background-muted);
 }
 
-body {
-  margin: 0;
+.demo-banner-note {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.demo-banner-scenario {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.demo-banner-scenario select {
+  font: inherit;
+  padding: 0.125rem 0.25rem;
+}
+
+/* Workspace pages own their padding because the shell uses contentPadding 0
+   for table-style content. */
+.workspace-page {
   padding: 1.5rem;
+  max-width: 80rem;
+  margin-inline: auto;
+}
+
+.workspace-page > :first-child {
+  margin-block-start: 0;
+}
+
+@media (max-width: 480px) {
+  .workspace-page {
+    padding: 1rem;
+  }
 }

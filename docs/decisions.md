@@ -15,6 +15,7 @@
 | Demo first, real compiler proof before connected work | Allows useful bounded UI work while high-risk integration assumptions receive separate evidence. |
 | Shell before parallel feature work | Fixes the client and route-loading interface before independent workers implement Structure and Readiness. |
 | No all-purpose green score | Readiness reports applicable facts with scope and freshness instead of claiming complete website quality. |
+| Shell layout: fixed side navigation (2026-11-08, P02) | Compared fixed side nav, compact icon rail, and top-only nav in a temporary demo route at 1280px and 390px. Eight persistent destinations need visible labels and grouping; Astryx guidance assigns 5+ destinations to SideNav and ≤5 to TopNav. Below the mobile breakpoint all three collapse to the same AppShell drawer, so the desktop evidence decides. Discarded layouts removed. |
 
 These decisions are defaults for the first implementation. A worker does not
 silently replace them. A proposed change records its reason, affected callers,
