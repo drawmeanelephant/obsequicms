@@ -64,13 +64,16 @@ describe('App shell', () => {
     renderApp();
 
     await user.click(screen.getByRole('link', { name: 'Pages' }));
-    const structureSection = screen.getByRole('region', { name: 'Structure' });
-    expect(structureSection).toHaveAttribute('data-view', 'inventory');
+    await screen.findByRole('heading', { name: 'Structure' });
+    expect(
+      screen.getByRole('radio', { name: 'Inventory' }),
+    ).toHaveAttribute('data-selected', 'selected');
 
     await user.click(screen.getByRole('link', { name: 'Structure' }));
+    await screen.findByRole('radio', { name: 'Outline' });
     expect(
-      screen.getByRole('region', { name: 'Structure' }),
-    ).toHaveAttribute('data-view', 'outline');
+      screen.getByRole('radio', { name: 'Outline' }),
+    ).toHaveAttribute('data-selected', 'selected');
   });
 
   it('unimplemented destinations explain their limits without sample content', async () => {

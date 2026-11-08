@@ -32,6 +32,12 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       'no-console': ['error', { allow: ['warn', 'error'] }],
+      // Scrollable regions stay keyboard-focusable (WCAG 2.1 scrolling
+      // area focus); the source preview and table scroll containers do this.
+      'jsx-a11y/no-noninteractive-tabindex': [
+        'error',
+        { tags: [], roles: ['tabpanel', 'region'] },
+      ],
     },
   },
   {
