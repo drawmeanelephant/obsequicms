@@ -1,0 +1,21 @@
+{
+  "name": "@obsequious/server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Obsequious application server (Fastify). The prototype exposes only a loopback health endpoint.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@obsequious/contracts": "0.0.0",
+    "fastify": "5.12.8"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "tsx": "4.23.15"
+  }
+}

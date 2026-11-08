@@ -1,0 +1,46 @@
+{
+  "name": "obsequious",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Obsequious — self-hosted CMS admin. So you don't have to be.",
+  "packageManager": "npm@11.19.1",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "npm": ">=11.0.0 <12.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:demo": "npm run dev --workspace @obsequious/web",
+    "dev:server": "npm run dev --workspace @obsequious/server",
+    "build": "npm run build --workspace @obsequious/server && npm run build --workspace @obsequious/web",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspace @obsequious/contracts && npm run typecheck --workspace @obsequious/server && npm run typecheck --workspace @obsequious/web",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.65.0",
+    "@types/node": "24.19.2",
+    "@vitejs/plugin-react": "5.2.0",
+    "eslint": "9.39.5",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "jsdom": "31.0.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "7.3.7",
+    "vitest": "3.2.7"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "@astryxdesign/core@0.7.11": true,
+    "fsevents": false
+  }
+}

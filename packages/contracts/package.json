@@ -1,0 +1,16 @@
+{
+  "name": "@obsequious/contracts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared Obsequious API contracts: schemas, types, errors, and the ObsequiousClient interface.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}
