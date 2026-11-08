@@ -14,6 +14,7 @@ import {
   BarChart3,
   Rocket,
 } from 'lucide-react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { workspaceLabel, type Workspace } from './workspaces';
 
 export type AppNavigationProps = {
@@ -50,9 +51,28 @@ const WORKSPACE_DESTINATIONS: Destination[] = [
 ];
 
 /**
+ * Whether this activation is an ordinary, unmodified primary activation:
+ * a plain click or a keyboard activation (Enter/Space, which arrive as
+ * button 0 without modifiers). Modified activations — Cmd/Ctrl-click for a
+ * new tab, Shift-click for a new window, Alt-click downloads — and other
+ * buttons belong to the browser and keep the native anchor behavior.
+ */
+function isPlainPrimaryActivation(event: ReactMouseEvent): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+/**
  * Persistent application navigation. Every destination stays reachable by
  * keyboard; the active destination carries aria-current="page" through
- * SideNavItem's isSelected.
+ * SideNavItem's isSelected. Real hrefs stay on every item, so unmodified
+ * clicks pushState through the router while modified clicks keep native
+ * browser navigation.
  */
 export function AppNavigation({
   activeWorkspace,
@@ -73,6 +93,9 @@ export function AppNavigation({
           href={hrefFor(workspace)}
           isSelected={workspace === activeWorkspace}
           onClick={(event) => {
+            if (!isPlainPrimaryActivation(event)) {
+              return;
+            }
             event.preventDefault();
             onNavigate(workspace);
           }}

@@ -1,7 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import type { z } from 'zod';
+import {
+  ReadinessIndexSchema,
+  ReadinessItemSchema,
+  type ObsequiousClient,
+} from '@obsequious/contracts';
 import { createDemoClient } from '../../demo';
+import { populatedScenario } from '../../demo/scenarios/populated';
 import { ReadinessPage } from './ReadinessPage';
 
 const clients = {
@@ -212,6 +219,72 @@ describe('ReadinessPage other scenarios', () => {
     expect(robotsRow).toBeVisible();
     expect(screen.getAllByText('Observation: stale').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Generated: stale').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('honors an evidence-backed opt-out in the attention count and filter', async () => {
+    // Reshape the populated scenario through the real schema: Analytics
+    // becomes an unconfigured optional item whose only observation is a
+    // current, evidence-backed human not_applicable decision, with no
+    // generated or deployed artifacts. Every other item is untouched.
+    type ReadinessIndexInput = z.input<typeof ReadinessIndexSchema>;
+    const index = ReadinessIndexSchema.parse(
+      populatedScenario.readiness as ReadinessIndexInput,
+    );
+    const llms = index.items.find((item) => item.key === 'llms');
+    if (!llms) throw new Error('missing llms fixture');
+    if (llms.observation.status !== 'complete') {
+      throw new Error('fixture observation is not complete');
+    }
+    const items = index.items.map((item) =>
+      item.key === 'analytics'
+        ? ReadinessItemSchema.parse({
+            ...llms,
+            key: 'analytics',
+            label: 'Analytics',
+            category: 'measurement',
+            configuration: 'not_configured',
+            generated: null,
+            deployment: null,
+            observation: llms.observation,
+            action: {
+              kind: 'manual_setup',
+              label: 'Configure analytics',
+              target: null,
+            },
+          })
+        : item,
+    );
+    const demo = createDemoClient('populated');
+    const client: ObsequiousClient = {
+      ...demo,
+      getReadiness: async () => ({ ...index, items }),
+    };
+    render(<ReadinessPage client={client} />);
+    await screen.findByRole('heading', { name: 'Site readiness' });
+
+    // The current opt-out is honored: one fewer item demands setup than
+    // the base scenario, and the count text reflects it.
+    expect(
+      screen.getByText(/10 of 14 items need attention\./),
+    ).toBeVisible();
+
+    // The attention filter excludes the opted-out item and keeps genuinely
+    // actionable ones.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('radio', { name: 'Needs attention' }));
+    expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
+    expect(screen.getByText('humans.txt')).toBeVisible();
+
+    // The opted-out item remains listed under All items and stays
+    // inspectable with its recorded decision.
+    await user.click(screen.getByRole('radio', { name: 'All items' }));
+    await user.click(screen.getByText('Analytics'));
+    const detail = screen.getByRole('complementary', {
+      name: 'Readiness item detail',
+    });
+    expect(
+      within(detail).getByText('Verdict: not_applicable'),
+    ).toBeVisible();
   });
 
   it('renders a failed request as an explicit error with retry and no fallback', async () => {

@@ -32,9 +32,30 @@ function toTreeItems(
 }
 
 /**
+ * A signature of the visible outline's nested shape. TreeList seeds
+ * expansion from `isExpanded` and keeps every user toggle in internal
+ * state that permanently outranks the seed, so a branch the user collapsed
+ * would stay collapsed even after search or filters reveal a matching
+ * descendant beneath it. Keying the TreeList by this shape remounts it
+ * whenever the visible node set changes, reseeding every branch open so
+ * matching descendants are reachable. When the shape is unchanged the key
+ * is stable and ordinary collapse state persists across selection changes.
+ */
+function outlineShapeKey(nodes: OutlineNode[]): string {
+  return nodes
+    .map(
+      (node) =>
+        `${node.page.entityId}<${outlineShapeKey(node.children)}>`,
+    )
+    .join('|');
+}
+
+/**
  * The outline view: nested parentage rendered from validated summaries.
  * Both root trees and the full deep chain stay visible; expansion starts
- * open so nothing hides behind a collapsed branch by default.
+ * open so nothing hides behind a collapsed branch by default, and search
+ * or filters that change the visible set re-open collapsed branches so a
+ * matching descendant is never concealed.
  */
 export function OutlineView({
   nodes,
@@ -54,6 +75,7 @@ export function OutlineView({
   return (
     <div>
       <TreeList
+        key={outlineShapeKey(nodes)}
         header={
           <Heading level={2} id="outline-heading">
             Outline

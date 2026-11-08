@@ -150,6 +150,101 @@ describe('StructurePage outline (populated)', () => {
     ).toBeVisible();
   });
 
+  it('reveals a matching descendant under a collapsed branch when searching', async () => {
+    const user = userEvent.setup();
+    await renderStructure();
+
+    const tree = await screen.findByRole('tree', { name: 'Outline' });
+    const guides = await within(tree).findByText('Field guides');
+    const guidesItem = guides.closest('[role="treeitem"]');
+    if (!guidesItem) {
+      throw new Error('Field guides tree item row not found');
+    }
+
+    // Collapse Field guides from the keyboard, as a keyboard user would.
+    await user.click(guides);
+    expect(guidesItem).toHaveAttribute('aria-expanded', 'true');
+    await user.keyboard('{ArrowLeft}');
+    await waitFor(() => {
+      expect(guidesItem).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(
+      within(tree).queryByText('Ferns of the valley'),
+    ).not.toBeInTheDocument();
+
+    // Searching for the descendant under the collapsed branch must reveal
+    // it: the search result is never concealed by retained collapse state.
+    // Re-query the tree — reconciling the visible set remounts TreeList,
+    // replacing its DOM element.
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search pages' }),
+      'Ferns of the valley',
+    );
+    const searchedTree = screen.getByRole('tree', { name: 'Outline' });
+    const searchedGuides = within(searchedTree)
+      .getByText('Field guides')
+      .closest('[role="treeitem"]');
+    if (!searchedGuides) throw new Error('tree item row not found');
+    expect(searchedGuides).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      within(searchedTree).getByText('Ferns of the valley'),
+    ).toBeVisible();
+
+    // Narrowing the filters keeps the revealed match visible.
+    await user.click(screen.getByRole('combobox', { name: 'Status filter' }));
+    await user.click(screen.getByRole('option', { name: 'Published' }));
+    expect(
+      within(screen.getByRole('tree', { name: 'Outline' })).getByText(
+        'Ferns of the valley',
+      ),
+    ).toBeVisible();
+
+    // Clearing filters widens back to the full outline, all reachable.
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    const clearedTree = screen.getByRole('tree', { name: 'Outline' });
+    expect(within(clearedTree).getByText('Seasonal fern care')).toBeVisible();
+
+    // Searching again after clearing works.
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search pages' }),
+      'Mosses',
+    );
+    const secondTree = screen.getByRole('tree', { name: 'Outline' });
+    expect(
+      within(secondTree).getByText('Mosses of the shaded paths'),
+    ).toBeVisible();
+    expect(within(secondTree).getByText('Field guides')).toBeVisible();
+  });
+
+  it('keeps ordinary collapse state when no filter changes the visible outline', async () => {
+    const user = userEvent.setup();
+    await renderStructure();
+
+    const tree = await screen.findByRole('tree', { name: 'Outline' });
+    const guides = within(tree).getByText('Field guides');
+    const guidesItem = guides.closest('[role="treeitem"]');
+    if (!guidesItem) throw new Error('tree item row not found');
+
+    await user.click(guides);
+    await user.keyboard('{ArrowLeft}');
+    await waitFor(() => {
+      expect(guidesItem).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    // Selecting another page changes only the selection; the user's
+    // collapse decision persists.
+    await user.click(within(tree).getByText('Welcome'));
+    expect(within(tree).queryByText('Ferns of the valley')).not.toBeInTheDocument();
+
+    // The user can expand the branch again.
+    await user.click(guides);
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() => {
+      expect(guidesItem).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(within(tree).getByText('Ferns of the valley')).toBeVisible();
+  });
+
   it('switches between outline and inventory views', async () => {
     const user = userEvent.setup();
     await renderStructure('populated', 'outline');
@@ -210,14 +305,46 @@ describe('StructurePage distinct states', () => {
   });
 
   it('renders an empty site as a valid current graph with no pages', async () => {
-    await renderStructure('empty');
+    const { container } = await renderStructure('empty');
 
+    // Scoped to the rendered workspace: EmptyState mirrors its text into
+    // the shared polite live region (outside this container), so an
+    // unscoped query would intermittently match both copies.
+    const workspace = within(container);
     expect(
-      await screen.findByText(/No pages in this publication/),
+      await workspace.findByText(/No pages in this publication/),
     ).toBeVisible();
     expect(
-      screen.getByText(/different from an unavailable or unsupported producer/),
+      workspace.getByText(/different from an unavailable or unsupported producer/),
     ).toBeVisible();
+  });
+
+  it('keeps empty-state assertions scoped while the announcement region holds the text', async () => {
+    const { container } = await renderStructure('empty');
+
+    // EmptyState announces its rendered text through the shared polite
+    // live region one frame after mount, and the announcement stays for
+    // about two seconds. Wait for that exact window — the timing that let
+    // an unscoped text query intermittently match both the visible
+    // description and the hidden announcement.
+    await waitFor(() => {
+      const region = document.body.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      expect(region?.textContent).toContain(
+        'different from an unavailable or unsupported producer',
+      );
+    });
+
+    // The workspace itself holds exactly one copy; the announcement lives
+    // outside the rendered workspace and is never asserted on.
+    const workspace = within(container);
+    const copies = workspace.getAllByText(
+      /different from an unavailable or unsupported producer/,
+    );
+    expect(copies).toHaveLength(1);
+    expect(copies[0]).toBeVisible();
+    expect(workspace.getByText(/No pages in this publication/)).toBeVisible();
   });
 
   it('renders a failed request as an explicit error with retry and no fallback', async () => {

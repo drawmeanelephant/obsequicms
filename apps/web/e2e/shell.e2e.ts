@@ -89,6 +89,55 @@ test.describe('application shell', () => {
     await expect(page).toHaveURL(/workspace=pages&scenario=stale/);
   });
 
+  test('modified clicks keep native behavior and open a new tab', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/?workspace=structure&scenario=populated');
+
+    // Cmd/Ctrl-click is the browser's, not the router's: a new tab opens
+    // with the same destination, preserving the scenario parameter, while
+    // the current tab stays exactly where it was.
+    const [popup] = await Promise.all([
+      context.waitForEvent('page'),
+      page
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'Readiness' })
+        .click({ modifiers: ['ControlOrMeta'] }),
+    ]);
+    await expect(popup).toHaveURL(/workspace=readiness&scenario=populated/);
+
+    await expect(page).toHaveURL(/workspace=structure&scenario=populated/);
+    await expect(
+      page.getByRole('heading', { name: 'Structure' }),
+    ).toBeVisible();
+  });
+
+  test('browser back and forward follow the workspace history', async ({
+    page,
+  }) => {
+    await page.goto('/?workspace=structure&scenario=populated');
+    const navigation = page.getByRole('navigation', { name: 'Main' });
+
+    await navigation.getByRole('link', { name: 'Readiness' }).click();
+    await expect(page).toHaveURL(/workspace=readiness&scenario=populated/);
+    await expect(
+      page.getByRole('heading', { name: 'Site readiness' }),
+    ).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/workspace=structure&scenario=populated/);
+    await expect(
+      page.getByRole('heading', { name: 'Structure' }),
+    ).toBeVisible();
+
+    await page.goForward();
+    await expect(page).toHaveURL(/workspace=readiness&scenario=populated/);
+    await expect(
+      page.getByRole('heading', { name: 'Site readiness' }),
+    ).toBeVisible();
+  });
+
   test('unimplemented destinations explain that they are not connected', async ({
     page,
   }) => {
@@ -97,10 +146,15 @@ test.describe('application shell', () => {
     await expect(
       page.getByRole('heading', { name: 'Publish is not connected' }),
     ).toBeVisible();
-    // EmptyState mirrors its description into an aria-live region, so the
-    // text legitimately appears twice; the first match is the visible copy.
+    // EmptyState mirrors its description into a body-level aria-live
+    // region, so scope to the empty state that carries the heading: the
+    // workspace must hold the visible copy without picking a blind first
+    // match.
+    const publishState = page
+      .getByRole('heading', { name: 'Publish is not connected' })
+      .locator('xpath=..');
     await expect(
-      page.getByText(/No build, release, or deployment can be started/).first(),
+      publishState.getByText(/No build, release, or deployment can be started/),
     ).toBeVisible();
   });
 

@@ -155,3 +155,107 @@ describe('needsAttention', () => {
     expect(needsAttention(llms, displayed)).toBe(false);
   });
 });
+
+/**
+ * Valid-data opt-out cases for an unconfigured optional item. Every case
+ * builds on the schema-valid `llms` fixture (the demo's human not-applicable
+ * decision) so each record passes `ReadinessItemSchema` exactly as a real
+ * response would.
+ */
+describe('needsAttention honors an evidence-backed opt-out', () => {
+  /** The displayed revision and an unrelated, valid revision. */
+  const OTHER_REVISION =
+    '019a0000-0000-7cc0-a1b2-c3d4e5f6ffff' as SourceRevision;
+
+  /** The llms fixture reshaped into an unconfigured optional analytics item. */
+  function unconfiguredAnalytics(
+    overrides: Partial<z.input<typeof ReadinessItemSchema>> = {},
+  ): ReadinessItem {
+    const llms = byKey.get('llms');
+    if (!llms) throw new Error('missing llms fixture');
+    return ReadinessItemSchema.parse({
+      ...llms,
+      key: 'analytics',
+      label: 'Analytics',
+      category: 'measurement',
+      configuration: 'not_configured',
+      action: {
+        kind: 'manual_setup',
+        label: 'Configure analytics',
+        target: null,
+      },
+      ...overrides,
+    });
+  }
+
+  it('does not demand setup for a current human not_applicable decision', () => {
+    const item = unconfiguredAnalytics();
+    // The opt-out subject names the displayed revision, the decision is
+    // evidence-backed, and the item holds no generated or deployed
+    // artifacts — the reviewed finding's exact case.
+    expect(item.generated).toBeNull();
+    expect(item.deployment).toBeNull();
+    expect(needsAttention(item, displayed)).toBe(false);
+  });
+
+  it('reopens setup for a stale opt-out that names an older revision', () => {
+    const llms = byKey.get('llms');
+    if (!llms) throw new Error('missing llms fixture');
+    if (llms.observation.status !== 'complete') {
+      throw new Error('fixture observation is not complete');
+    }
+    const item = unconfiguredAnalytics({
+      observation: {
+        ...llms.observation,
+        subject: {
+          sourceRevision: OTHER_REVISION,
+          releaseId: null,
+          url: null,
+        },
+      },
+    });
+    expect(needsAttention(item, displayed)).toBe(true);
+  });
+
+  it('keeps a missing decision actionable', () => {
+    const item = unconfiguredAnalytics({
+      observation: { status: 'not_checked' },
+    });
+    expect(needsAttention(item, displayed)).toBe(true);
+  });
+
+  it('keeps unknown applicability (needs_review) actionable', () => {
+    const llms = byKey.get('llms');
+    if (!llms) throw new Error('missing llms fixture');
+    if (llms.observation.status !== 'complete') {
+      throw new Error('fixture observation is not complete');
+    }
+    const item = unconfiguredAnalytics({
+      observation: { ...llms.observation, verdict: 'needs_review' },
+    });
+    expect(needsAttention(item, displayed)).toBe(true);
+  });
+
+  it('keeps a failed check actionable', () => {
+    const llms = byKey.get('llms');
+    if (!llms) throw new Error('missing llms fixture');
+    if (llms.observation.status !== 'complete') {
+      throw new Error('fixture observation is not complete');
+    }
+    const item = unconfiguredAnalytics({
+      observation: { ...llms.observation, verdict: 'failed' },
+    });
+    expect(needsAttention(item, displayed)).toBe(true);
+  });
+
+  it('keeps an errored check actionable', () => {
+    const item = unconfiguredAnalytics({
+      observation: {
+        status: 'error',
+        code: 'provider_unreachable',
+        message: 'The provider could not be reached.',
+      },
+    });
+    expect(needsAttention(item, displayed)).toBe(true);
+  });
+});

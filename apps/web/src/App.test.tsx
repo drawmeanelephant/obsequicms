@@ -90,6 +90,27 @@ describe('App shell', () => {
 });
 
 describe('workspace router', () => {
+  it('keeps modified clicks native: the current tab stays put', async () => {
+    renderApp('?workspace=structure&scenario=stale');
+
+    // A Cmd/Ctrl-click belongs to the browser (new tab). The current tab
+    // must not navigate, and the real href stays available to it.
+    const readiness = screen.getByRole('link', { name: 'Readiness' });
+    expect(readiness).toHaveAttribute('href', '?workspace=readiness&scenario=stale');
+    readiness.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        button: 0,
+        metaKey: true,
+      }),
+    );
+
+    expect(window.location.search).toBe('?workspace=structure&scenario=stale');
+    expect(screen.getByRole('heading', { name: 'Structure' })).toBeVisible();
+  });
+
   it('follows back and forward through workspace history', async () => {
     const user = userEvent.setup();
     renderApp('?workspace=structure&scenario=populated');

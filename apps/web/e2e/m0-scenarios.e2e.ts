@@ -119,8 +119,14 @@ test.describe('M0 integrated prototype', () => {
     await expect(
       page.getByRole('heading', { name: 'No pages in this publication' }),
     ).toBeVisible();
+    // EmptyState mirrors its description into a body-level aria-live
+    // region: scope to the empty state that carries the heading instead of
+    // picking a blind first match.
     await expect(
-      page.getByText(/different from an unavailable or unsupported producer/).first(),
+      page
+        .getByRole('heading', { name: 'No pages in this publication' })
+        .locator('xpath=..')
+        .getByText(/different from an unavailable or unsupported producer/),
     ).toBeVisible();
   });
 
