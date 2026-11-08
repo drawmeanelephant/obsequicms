@@ -113,9 +113,13 @@ test.describe('application shell', () => {
     await expect(
       page.getByRole('navigation', { name: 'Main' }),
     ).toBeVisible();
+    // The workspace shows an explicit error state: no blank screen, no
+    // substitute data.
     await expect(
-      page.getByText(/^Not connected: this is a project-scaffold placeholder/),
-    ).toHaveCount(1);
+      page.getByText(/The page graph could not be loaded/),
+    ).toBeVisible();
+    await expect(page.getByRole('tree')).toHaveCount(0);
+    await expect(page.getByRole('table')).toHaveCount(0);
   });
 
   test('at a 390 CSS pixel viewport the navigation drawer opens and destinations work', async ({

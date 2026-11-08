@@ -13,13 +13,14 @@ independent of the admin application's availability.
 
 ## Current state
 
-This repository contains a planning baseline, not an application. It has no
-package manifest, runnable server, connected accounts, or working CMS features.
-No deployment or audit coverage is claimed.
+M0 prototype: an Astryx (React 19) application with a working Structure
+workspace and Site Readiness workspace over explicitly labeled demo data,
+plus an application-server scaffold with a loopback health endpoint. No
+account, real source store, compiler connection, public deployment, or
+audit coverage exists. Every screen labels its data as demo data.
 
-The first deliverable is a working Astryx prototype with Structure and Site
-Readiness workflows. The next milestone connects real source files and a pinned
-Boris binary. Public deployment follows authentication and release-safety work.
+The next milestone connects real source files and a pinned Boris binary
+(P06). Public deployment follows authentication and release-safety work.
 
 ## Read the plan
 
@@ -34,23 +35,33 @@ Boris binary. Public deployment follows authentication and release-safety work.
 
 ## Start the implementation
 
-1. Give one worker [P00](docs/work-packets.md#p00-project-setup).
-2. Give one worker [P01](docs/work-packets.md#p01-shared-contracts-and-demo-data).
-3. Review and merge the contracts before other workers depend on them.
-4. Complete P02 to establish the app shell and feature-loading interface.
-5. Run P03 and P04 on separate branches. Their owned files do not overlap.
-6. Use P05 to review the integrated prototype.
-7. Resolve the compiler pin and start the real integration milestone.
+M0 (P00–P05) is implemented on the `m0-prototype` branch; see
+[the work reports](docs/work-reports). P06 — the real compiler adapter
+proof against a pinned binary — is the next packet.
 
 The first wave needs no account credentials or public network listener. Do not
 substitute demo data when a real API or compiler request fails.
 
 ## Development commands
 
-P00 establishes `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`,
-`npm run build`, and `npm run test:e2e`. These commands do not exist yet.
-P00 also establishes `npm run dev:demo` as an explicitly labeled, loopback-only
-prototype. Real compiler tests arrive with P06 as `npm run test:boris`.
+Requirements: Node 24 and real npm 11 (`.node-version` pins `24.22.2`;
+`engines` enforces the range). The repository keeps a pinned local
+toolchain in the git-ignored `.tooling/node/` directory on the machine
+where it was set up; a fresh clone can supply Node 24 any way it prefers.
+
+```sh
+# with a Node 24 / npm 11 toolchain first on PATH
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e   # builds the web app and tests it via loopback preview
+npm run dev:demo   # labeled demo prototype on http://127.0.0.1:5173
+npm run dev:server # loopback-only health endpoint on http://127.0.0.1:8787
+```
+
+Real compiler tests arrive with P06 as `npm run test:boris`.
 
 ## Repository status
 
