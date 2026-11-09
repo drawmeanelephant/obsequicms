@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { cp, readFile, rm, writeFile } from 'node:fs/promises';
-import { existsSync, readdirSync, statSync, readFileSync } from 'node:fs';
+import { closeSync, existsSync, fstatSync, openSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -69,12 +69,17 @@ function hashTree(root: string): string {
     for (const entry of readdirSync(dir).sort()) {
       const full = join(dir, entry);
       const rel = prefix === '' ? entry : `${prefix}/${entry}`;
-      if (statSync(full).isDirectory()) {
-        walkTree(full, rel);
-      } else {
-        collected.push(
-          `${rel}:${createHash('sha256').update(readFileSync(full)).digest('hex')}`,
-        );
+      const fd = openSync(full, 'r');
+      try {
+        if (fstatSync(fd).isDirectory()) {
+          walkTree(full, rel);
+        } else {
+          collected.push(
+            `${rel}:${createHash('sha256').update(readFileSync(fd)).digest('hex')}`,
+          );
+        }
+      } finally {
+        closeSync(fd);
       }
     }
   };

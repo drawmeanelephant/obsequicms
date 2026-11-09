@@ -126,7 +126,9 @@ as the public source repository. Source publication is not deployment or
 production readiness. No project license has been chosen, and this project is
 not offered as open source. No application deployment is part of this work.
 
-Changes to `main` require a PR, up-to-date CI, and resolved conversations,
-including for admins. Force pushes and deleting `main` are blocked. Merged
+Changes to `main` require a PR, up-to-date CI, dependency review, both CodeQL
+analyses, and resolved conversations, including for admins. A CodeQL ruleset
+also requires scan results and blocks new high/critical security findings
+and error-level findings. Force pushes and deleting `main` are blocked. Merged
 head branches are automatically deleted. See [CONTRIBUTING.md](CONTRIBUTING.md)
 for the solo-maintainer review policy.
