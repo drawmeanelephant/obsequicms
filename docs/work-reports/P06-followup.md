@@ -287,24 +287,30 @@ Assignment B (this commit): `README.md`, `docs/boris-binary.md`,
 
 ## Clean-copy verification
 
-Steps (run after the documentation commit below):
+Run against an exported copy of the documentation commit (`297d299`) with no
+ignored state — no `node_modules`, no `.tooling`, no `.cache`, no test
+artifacts:
 
-1. `git archive --format=tar.gz --prefix=obsequies-clean/ <tip> | tar -x -C
-   <empty temp dir>` — an exported copy with no ignored state (no
-   `node_modules`, `.tooling`, `.cache`, test artifacts).
-2. In the copy, with only the repository-local Node 24 on `PATH`:
-   `npm ci`, then the six standard commands exactly as
-   [the README](../README.md#requirements-and-setup-fresh-clone) documents
-   them, and `npm run test:boris` with the approved binary.
-3. Also confirm no step reads anything from the original checkout's
-   ignored directories.
+1. `git archive --format=tar --prefix=clean/ 297d299 | tar -x -C <empty temp
+   dir>`; confirmed `.tooling`/`node_modules` are absent from the copy.
+2. In the copy, with only the repository-local Node `24.22.2` on `PATH`
+   (npm `11.19.1`), exactly the commands
+   [the README](../README.md#requirements-and-setup-fresh-clone) documents:
 
-Results are recorded in the table above's "Clean-copy verification" row of
-[this commit's report update](#exact-commands-and-results) — the run
-happened after the documentation commit; the numbers are in the final
-validation table of this report's closing section.
+| Command (in the clean copy) | Result |
+| --- | --- |
+| `npm ci` | Pass — 506 packages in 3s |
+| `npm run lint` | Pass |
+| `npm run typecheck` | Pass |
+| `npm test` | Pass — 192/192 |
+| `npm run build` | Pass |
+| `npm run test:e2e` | Pass — 28 browser tests |
+| `BORIS_BIN=<approved> npm run test:boris` | Pass — 14/14 |
+| `npm run test:boris` (no `BORIS_BIN`) | Exit 1, explicit refusal |
 
-<a name="next-work"></a>
+No step read anything from the original checkout's ignored directories; the
+copy contains only committed files.
+
 ## Next work
 
 The bounded M1 packet ("M1: connect one real project, read-only") is in
