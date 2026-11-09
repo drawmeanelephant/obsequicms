@@ -20,6 +20,17 @@ full — plus [the product scope](docs/product.md),
 
 ## Checks a change must pass
 
+Open a topic-branch PR targeting `main`; direct pushes are blocked, including
+for admins. CI must pass against the current base and conversations must be
+resolved. Merge commits preserve the reviewed history; squash and rebase
+merges are disabled. GitHub automatically deletes merged head branches.
+
+The repository currently has one maintainer, so no independent approval is
+required: an author cannot approve their own PR. Review your complete diff
+before merging. Add an independent approval requirement when another
+maintainer is appointed. Auto-merge is available, but no bot update is
+automatically opted into it.
+
 The six standard commands, with Node 24 and real npm 11:
 
 ```sh
@@ -36,6 +47,12 @@ BORIS_BIN=/absolute/path/to/pinned/boris npm run test:boris
 See [docs/boris-binary.md](docs/boris-binary.md) for the approved binary and
 the platform restriction. A missing or wrong binary fails the gate; it is
 never skipped.
+
+Actions are restricted to GitHub-owned actions pinned to full commit SHAs.
+Keep workflow tokens read-only except for the explicit CodeQL security-report
+upload permission. Do not run untrusted code with `pull_request_target`,
+pass repository secrets to fork PRs, or weaken a required check to merge.
+External-contributor fork workflows require maintainer approval.
 
 Run the checks yourself and record exact commands and results in
 `docs/work-reports/Pxx.md` for your packet. Do not report commands you did

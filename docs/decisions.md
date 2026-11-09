@@ -22,6 +22,7 @@
 | Outcome/report matrix with `failureReport` (2026-11-08, P06 follow-up R3) | Per the upstream contract, content outcomes never read analysis reports (no `check`/`impact` report exists on content failure), so ordinary content failures are distinct from I/O failures and from missing artifacts after a successful run. IR and HTML operations parse the run's fresh failure report into a typed `failureReport` field — never as artifacts — and reject a report claiming `ok` on a content outcome. |
 | Publication preparation docs (2026-11-08, P06 follow-up) | README separates the demo interface, the real compiler adapter, and the unimplemented connected backend; `docs/boris-binary.md` records acquisition and the Darwin-arm64 platform restriction without weakening the digest pin; `CONTRIBUTING.md` and `SECURITY.md` state packet rules and the pre-release posture with no invented security contact; CI documents that `test:boris` is intentionally not run there. License and repository visibility remain owner decisions. |
 | Private source publication (2026-11-08, owner-authorized cleanup) | The owner selected `drawmeanelephant/obsequicms`, private visibility for a new repository, and normal publication of the verified implementation HEAD as remote `main` if the destination is empty. Local planning `main`, other branches, and other worktrees are preserved. This does not authorize deployment, package publication, or unrelated integrations. No license has been selected. |
+| Public repository and PR/security safeguards (2026-11-08, owner-authorized follow-up) | Supersedes the private visibility decision above. The owner authorized public source and repository-level governance/security settings. Require PRs, up-to-date CI, resolved conversations, and no admin bypass; block force pushes and deletion of `main`; delete merged head branches. Preserve history through merge commits. With one maintainer, do not require an impossible self-approval. Enable private vulnerability reporting, secret scanning/push protection, Dependabot, CodeQL, dependency review, and least-privilege SHA-pinned Actions. No license, deployment, paid security product, or account-wide setting is selected. |
 
 These decisions are defaults for the first implementation. A worker does not
 silently replace them. A proposed change records its reason, affected callers,
@@ -29,8 +30,8 @@ and verification here for review.
 
 ## Open decisions
 
-- The project license and a private security-reporting channel remain owner
-  decisions. Repository creation and private visibility are authorized above.
+- The project license remains an owner decision. Public visibility is
+  authorized above; GitHub private vulnerability reporting is enabled.
 - Distribution of the approved compiler kit and a separately reviewed Linux
   provenance entry remain unresolved. P06 selected and verified the
   Darwin-arm64 binary recorded in [the acquisition guide](boris-binary.md).
