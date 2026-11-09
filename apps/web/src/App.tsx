@@ -7,6 +7,7 @@ import { AppNavigation } from './shell/AppNavigation';
 import { useWorkspaceRoute } from './shell/useWorkspaceRoute';
 import { WorkspaceErrorBoundary } from './shell/WorkspaceErrorBoundary';
 import { WorkspaceOutlet } from './shell/WorkspaceOutlet';
+import { workspaceLabel } from './shell/workspaces';
 
 export type AppProps = {
   /**
@@ -33,7 +34,7 @@ export default function App({ client, banner }: AppProps) {
   return (
     <AppShell
       height="fill"
-      variant="section"
+      variant="elevated"
       contentPadding={0}
       banner={banner}
       topNav={
@@ -41,6 +42,9 @@ export default function App({ client, banner }: AppProps) {
           label="Application"
           heading={
             <TopNavHeading heading="Obsequious" headingHref={hrefFor('structure')} />
+          }
+          endContent={
+            <span className="workspace-context">{workspaceLabel(workspace)}</span>
           }
         />
       }

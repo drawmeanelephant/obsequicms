@@ -53,8 +53,10 @@ bounty, or production-support commitment is established.
 - Actions use full commit pins and read-only default tokens. Only GitHub-owned
   actions are allowed; CodeQL's analysis job alone requests security-report
   upload permission. Fork workflows from external contributors need approval.
-- `main` requires PRs, current CI, and resolved conversations, even for admins.
-  Force pushes and branch deletion are blocked.
+- `main` requires PRs, current CI, dependency review, both CodeQL analyses,
+  and resolved conversations, even for admins. A separate CodeQL ruleset
+  requires reports and blocks new high/critical security findings and
+  error-level findings. Force pushes and branch deletion are blocked.
 
 These controls are not a guarantee of security or a substitute for the
 authentication, source, process, and release review gates. No license has
