@@ -24,27 +24,40 @@ be fetched and executed during application startup.
 
 ## How to acquire an approved build
 
-The recorded acquisition path is the upstream handoff kit from
+No download of the approved archive is published by this project. Ask the
+repository owner for the exact recorded kit through an existing private
+channel. Verify its archive and binary digests before executing it.
+
+The recorded build path is the upstream handoff kit from
 [`drawmeanelephant/boris`](https://github.com/drawmeanelephant/boris) at the
-pinned source revision:
+pinned source revision. Building requires access to that source, Zig `0.17.1`,
+and its dependencies on Darwin-arm64. The commands below show the upstream
+build procedure, not a guarantee that another environment produces the approved
+bytes. A different digest requires review, never a relaxed gate.
 
 ```sh
 # 1. A detached worktree at the pinned revision (boris source untouched).
-git clone https://github.com/drawmeanelephant/boris.git boris-kit
-git -C boris-kit worktree add --detach boris-kit-worktree \
+git clone https://github.com/drawmeanelephant/boris.git boris-kit-source
+git -C boris-kit-source worktree add --detach ../boris-kit-worktree \
   c50d8622bd407bcb5f559a4d7ed5da440a2259ec
 
 # 2. Build the handoff kit inside that worktree (upstream script).
 cd boris-kit-worktree
-scripts/agent-pack.sh --out /tmp/boris-agent-kit.tar.gz
+kit_dir="$(mktemp -d)"
+scripts/agent-pack.sh --out "$kit_dir"
+archive="$kit_dir/boris-agent-kit-c50d8622bd40.tar.gz"
 
 # 3. Verify the kit archive digest against the provenance record.
-shasum -a 256 /tmp/boris-agent-kit.tar.gz
+shasum -a 256 "$archive"
 # must print 39b5be8ef5bd132f5c22495a415de863ae071d62bed7732dd8250cc042900602
 
-# 4. Extract and point the gate at the binary.
-tar -xzf /tmp/boris-agent-kit.tar.gz -C /tmp
-BORIS_BIN=/tmp/boris-agent-kit/bin/boris npm run test:boris
+# 4. Only after the digest matches, extract into a fresh directory.
+unpacked="$(mktemp -d)"
+tar -xzf "$archive" -C "$unpacked"
+export BORIS_BIN="$unpacked/boris-agent-kit/bin/boris"
+# Return to the Obsequious checkout before running npm:
+# cd /absolute/path/to/obsequicms
+# npm run test:boris
 ```
 
 Re-verify the binary's digest yourself before trusting any copy:
@@ -54,7 +67,7 @@ shasum -a 256 "$BORIS_BIN"
 # must print 9d2e3f0a07524ffe479287c8088796b4bb2de497838866734fefda21c6f34d8c
 ```
 
-The gate performs the same comparison and fails on mismatch — including a
+The gate performs the same comparison and fails on mismatch — including an
 older dirty `boris/0.8.2` local build, which is **not** accepted evidence
 for this baseline. Do not weaken, bypass, or parameterize the digest check.
 

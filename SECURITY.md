@@ -3,7 +3,7 @@
 ## Status: pre-release, local-only
 
 Obsequious is a pre-release application. It has **no approved public
-hosting, no authenticated editing workflow, and no supported runtime**. Do
+hosting, no authenticated editing workflow, and no supported production installation**. Do
 not deploy it on a public host, tunnel it to the internet, or expose it
 beyond your machine.
 
@@ -31,10 +31,10 @@ because no provider is connected.
 
 ## Reporting a problem
 
-No dedicated security contact exists yet, and none is invented here. When
-the repository is published, use GitHub's private vulnerability reporting
-for it; until then, contact the repository owner directly through an
-existing private channel. Do not open public issues for security problems.
+No dedicated security contact exists yet, and none is invented here. Contact
+the repository owner through an existing private channel. GitHub private
+vulnerability reporting has not been configured or verified; publishing source
+does not enable it. Do not open public issues for security problems.
 
 A security contact will be established before any public deployment is
 approved — deployment itself remains gated behind the authentication and

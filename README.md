@@ -59,8 +59,11 @@ the planned boundary; nothing serves it yet.
   Any Node 24 source works: a version manager, a system package, or the
   official installer. The repository does not depend on a machine-local
   toolchain.
-- No accounts, services, network access, or environment files are needed for
-  development; all development listeners are loopback-only.
+- Dependency installation needs access to the npm registry. Browser tests also
+  need Playwright's Chromium (`npx playwright install chromium`; on Linux,
+  `npx playwright install --with-deps chromium` installs system dependencies).
+  After setup, demo development needs no accounts, services, or environment
+  files; all development listeners are loopback-only.
 
 ```sh
 npm ci
@@ -112,6 +115,7 @@ No security contact is established yet.
 
 ## Repository status
 
-The project is pre-release and local. No GitHub repository, remote, or
-visibility has been selected, and no project license has been chosen — both
-remain explicit owner decisions. Nothing is deployed anywhere.
+The owner selected [drawmeanelephant/obsequicms](https://github.com/drawmeanelephant/obsequicms)
+as the private source repository. Source publication is not deployment or
+production readiness. No project license has been chosen, and this project is
+not offered as open source. No application deployment is part of this work.

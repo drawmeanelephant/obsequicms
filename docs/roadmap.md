@@ -1,6 +1,8 @@
 # Implementation roadmap
 
-Status: planned work. No milestone is complete.
+Status: M0's demo prototype and the P06 compiler-adapter proof are implemented
+and reviewed; see [the work reports](work-reports/). Connected M1 work and the
+later milestones remain planned. This is not a production-readiness claim.
 
 ## M0: useful prototype
 

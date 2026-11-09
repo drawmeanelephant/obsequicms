@@ -21,6 +21,7 @@
 | Full documentation-intelligence payload at the artifact boundary (2026-11-08, P06 follow-up R2) | The DI 0.2.0 parser now validates and returns the whole upstream schema body (summary, nodes, edges, source locations, pages, sources, findings, impact, diagnostics) instead of headers plus an invented `kind` field. Shape validation only — Boris stays authoritative for graph semantics. |
 | Outcome/report matrix with `failureReport` (2026-11-08, P06 follow-up R3) | Per the upstream contract, content outcomes never read analysis reports (no `check`/`impact` report exists on content failure), so ordinary content failures are distinct from I/O failures and from missing artifacts after a successful run. IR and HTML operations parse the run's fresh failure report into a typed `failureReport` field — never as artifacts — and reject a report claiming `ok` on a content outcome. |
 | Publication preparation docs (2026-11-08, P06 follow-up) | README separates the demo interface, the real compiler adapter, and the unimplemented connected backend; `docs/boris-binary.md` records acquisition and the Darwin-arm64 platform restriction without weakening the digest pin; `CONTRIBUTING.md` and `SECURITY.md` state packet rules and the pre-release posture with no invented security contact; CI documents that `test:boris` is intentionally not run there. License and repository visibility remain owner decisions. |
+| Private source publication (2026-11-08, owner-authorized cleanup) | The owner selected `drawmeanelephant/obsequicms`, private visibility for a new repository, and normal publication of the verified implementation HEAD as remote `main` if the destination is empty. Local planning `main`, other branches, and other worktrees are preserved. This does not authorize deployment, package publication, or unrelated integrations. No license has been selected. |
 
 These decisions are defaults for the first implementation. A worker does not
 silently replace them. A proposed change records its reason, affected callers,
@@ -28,8 +29,11 @@ and verification here for review.
 
 ## Open decisions
 
-- GitHub repository creation, visibility, and project license require the owner.
-- The actual compiler release artifact and digest must be selected before P06.
+- The project license and a private security-reporting channel remain owner
+  decisions. Repository creation and private visibility are authorized above.
+- Distribution of the approved compiler kit and a separately reviewed Linux
+  provenance entry remain unresolved. P06 selected and verified the
+  Darwin-arm64 binary recorded in [the acquisition guide](boris-binary.md).
 - External analytics and search providers are selected before their integration
   packets, not by a prototype worker.
 - The reviewed preview sandbox, authentication settings, and deployment packaging
