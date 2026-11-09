@@ -32,13 +32,15 @@ export type ProjectSnapshot = {
   hasProfile: boolean;
 };
 
-/** Read bounded regular files without following a final or parent symlink. */
+/**
+ * Read bounded regular files without following a final or parent symlink.
+ * Opening comes first: O_NOFOLLOW refuses a final-component symlink, and all
+ * type/size checks use the opened handle (fstat), so no check-then-open race
+ * exists. The post-read lstat/resolve only verify the path still names the
+ * same inode that was read.
+ */
 export async function readContainedFile(root: string, path: string): Promise<Buffer> {
   const absolute = await resolveContainedPath(root, path);
-  const entry = await lstat(absolute);
-  if (!entry.isFile() || entry.size > SOURCE_BYTE_LIMIT) {
-    throw new ApiError('unsupported', 'Project inputs must be regular files of at most 8 MiB.');
-  }
   const file = await open(absolute, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const before = await file.stat();
