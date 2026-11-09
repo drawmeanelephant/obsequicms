@@ -16,6 +16,9 @@ export type WorkspaceOutletProps = {
  * keyed by workspace in App).
  */
 export function WorkspaceOutlet({ client, workspace }: WorkspaceOutletProps) {
+  if (client.mode === 'connected' && workspace === 'readiness') {
+    return <PlaceholderWorkspace workspace={workspace} mode={client.mode} />;
+  }
   switch (workspace) {
     case 'pages':
       return <StructurePage client={client} initialView="inventory" />;
@@ -24,7 +27,7 @@ export function WorkspaceOutlet({ client, workspace }: WorkspaceOutletProps) {
     case 'readiness':
       return <ReadinessPage client={client} />;
     default:
-      return <PlaceholderWorkspace workspace={workspace} />;
+      return <PlaceholderWorkspace workspace={workspace} mode={client.mode} />;
   }
 }
 

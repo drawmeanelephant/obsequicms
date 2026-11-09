@@ -13,6 +13,8 @@ export default defineConfig({
   test: {
     name: 'boris-gate',
     environment: 'node',
-    include: ['apps/server/test/boris/compiler-gate.test.ts'],
+    include: ['apps/server/test/boris/*-gate.test.ts'],
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

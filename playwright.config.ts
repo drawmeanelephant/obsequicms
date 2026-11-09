@@ -7,6 +7,7 @@ export default defineConfig({
   // feature test folders (docs/api.md#prototype-composition).
   testDir: 'apps/web',
   testMatch: '**/*.e2e.ts',
+  testIgnore: '**/*.connected.e2e.ts',
   timeout: 30_000,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {

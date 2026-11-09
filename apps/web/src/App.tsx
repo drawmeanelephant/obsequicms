@@ -29,7 +29,7 @@ export type AppProps = {
  * explain their limits instead of showing sample content.
  */
 export default function App({ client, banner }: AppProps) {
-  const { workspace, navigate, hrefFor } = useWorkspaceRoute();
+  const { workspace, navigate, hrefFor } = useWorkspaceRoute(client.mode);
 
   return (
     <AppShell

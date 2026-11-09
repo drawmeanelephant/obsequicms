@@ -20,7 +20,7 @@ export default defineConfig({
           exclude: [
             ...configDefaults.exclude,
             '**/*.e2e.ts',
-            'apps/server/test/boris/compiler-gate.test.ts',
+            'apps/server/test/boris/*-gate.test.ts',
           ],
         },
       },

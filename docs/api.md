@@ -1,8 +1,15 @@
 # Initial API contracts
 
-Status: implementation specification for P01. These endpoints are not
-implemented. The server implements them in later milestones. Demo clients
-implement the same TypeScript interface without opening an API listener.
+Status: shared contracts implemented; private read-only M1 implements only
+`GET /api/v1/health`, `GET /api/v1/site`, `GET /api/v1/pages`, and
+`GET /api/v1/source`. All other listed endpoints remain planned and absent.
+Demo clients implement the same TypeScript interface without network calls.
+The separate connected composition never imports demo records.
+
+M1 is an explicit **loopback-only, unauthenticated development exception** to
+the planned owner-session requirements below. It must not be deployed,
+tunneled, or reverse-proxied publicly. Project and executable selection are
+server configuration, not request fields. See [connected mode](connected.md).
 
 Application fields use camelCase. Forwarded Boris artifacts retain their
 original field names, discriminators, and versions.
@@ -80,6 +87,9 @@ Locations are project-relative. HTML is never embedded in diagnostic messages.
 A `SourceBuffer` contains `path`, `sourceRevision`, `fileHash`, and `content`.
 The content is UTF-8 source with its original line endings. The initial limit
 is 8 MiB per source file, measured in UTF-8 bytes.
+This is a source-buffer bound, not a promise that Boris accepts an 8 MiB page:
+the pinned Boris parser has a separate 1 MiB page-source limit. M1 preserves
+that compiler refusal and can still return the exact retained raw source.
 
 A `SaveSourceRequest` contains `path`, `expectedSourceRevision`,
 `expectedFileHash`, and `content`. A successful save returns a `SourceBuffer`
@@ -190,6 +200,11 @@ the real server and HTTP adapter. A connected failure never changes that mode.
 
 P02 gives `App` an injected `client: ObsequiousClient`. The demo entry creates
 that client explicitly. A connected entry does not import demo scenarios.
+
+M1's `connected.html` constructs a same-origin HTTP client. Failed transport,
+malformed responses, and unsupported producers never change its connected
+mode. Connected navigation preserves that entry path and does not add demo
+scenario parameters. Unimplemented workspaces explain their limits.
 
 `StructurePage` accepts `client` and an optional `initialView` of `outline` or
 `inventory`, defaulting to `outline`. `ReadinessPage` accepts `client`.

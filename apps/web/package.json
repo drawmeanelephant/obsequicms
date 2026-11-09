@@ -6,6 +6,7 @@
   "description": "Obsequious admin web application (React 19, Astryx, Vite).",
   "scripts": {
     "dev": "vite",
+    "dev:connected": "vite --config vite.connected.config.ts --strictPort",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"

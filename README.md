@@ -32,14 +32,21 @@ and the six allowlisted compiler operations from
 [the integration contract](docs/boris-integration.md). The explicit gate
 (`npm run test:boris`) proves it against a digest-pinned `boris/0.9.0`
 binary — real nested pages, real findings, real impact results, real content
-failures with located diagnostics. This is a server library layer: it is
-**not reachable over HTTP** and **not wired into the demo interface**.
+failures with located diagnostics. This remains server-owned: M1 calls its
+read-only operations through a restricted private boundary. The separate demo
+does not use the compiler.
 
-**3. The connected backend — not implemented.**
-There is no source store, no job runner, no sessions or authentication, no
-application API beyond a loopback-only health endpoint, no publication, and
-no analytics or provider connections. [The API contracts](docs/api.md) fix
-the planned boundary; nothing serves it yet.
+**3. Read-only M1 — connects one real project locally.**
+The separate connected entry reads real pages, compiler relationships,
+located diagnostics, graph-check findings, and exact source bytes from an
+explicitly selected project. The server runs the digest-pinned compiler only
+in isolated snapshots, never against the selected live tree. It exposes only
+health, site, pages, and source reads on loopback. There is no demo fallback.
+
+Start with [the connected-mode guide](docs/connected.md). There is still no
+persistent source store, durable job runner, session/authentication system,
+editing, preview transport, publication, or provider connection. This is not
+approved for public hosting.
 
 ## Read the plan
 
@@ -73,8 +80,26 @@ npm test
 npm run build
 npm run test:e2e   # builds the web app and tests it via loopback preview
 npm run dev:demo   # labeled demo prototype on http://127.0.0.1:5173
-npm run dev:server # loopback-only health endpoint on http://127.0.0.1:8787
+npm run dev:server # loopback backend; health only without a selected project
 ```
+
+For real data, use a separate terminal for each process:
+
+```sh
+# Terminal 1, from the repository root:
+OBSEQUIOUS_PROJECT_ROOT=/absolute/path/to/a/boris/project \
+BORIS_BIN=/absolute/path/from/an/approved/kit/bin/boris \
+npm run dev:server
+
+# Terminal 2:
+npm run dev:connected
+```
+
+Open `http://127.0.0.1:5173/`; the connected command redirects to
+`/connected.html`. The page says **Real data · read-only M1** and names the
+captured source revision. The original `npm run dev:demo` remains separate.
+Never point a test at another owner's content. See
+[the full guide](docs/connected.md) for limits and checks.
 
 ## The real compiler gate
 
@@ -83,6 +108,7 @@ require the pinned Boris binary:
 
 ```sh
 BORIS_BIN=/absolute/path/to/pinned/boris npm run test:boris
+BORIS_BIN=/absolute/path/to/pinned/boris npm run test:connected
 ```
 
 A missing binary, or one whose SHA-256 does not match the committed
@@ -95,7 +121,7 @@ digest is verified, and the current platform restriction are documented in
 
 CI (`.github/workflows/ci.yml`) runs on Node `24.22.2`: install, lint,
 typecheck, the standard unit/component suites, build, and the browser tests.
-It does **not** run `npm run test:boris` — the pinned binary is a
+It does **not** run `npm run test:boris` or `npm run test:connected` — the pinned binary is a
 machine-local artifact that is not published, so no real-compiler coverage
 is claimed on CI. Running the gate remains a local step for anyone holding
 the approved binary.

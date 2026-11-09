@@ -10,15 +10,20 @@ these runtime restrictions.
 
 Concretely, today:
 
-- All development listeners (`dev:demo` on 5173, `dev:server` on 8787) bind
+- All development listeners (`dev:demo` / `dev:connected` on 5173, `dev:server` on 8787) bind
   to loopback only, by design, and the port is the only configurable part.
-- The server exposes a loopback health endpoint. There are no sessions, no
-  accounts, and no application API yet; the compiler adapter is a library
-  layer that HTTP handlers cannot reach.
+- With no project configured, the server exposes health only. Private M1
+  additionally exposes read-only site, page-index, and snapshot-source
+  endpoints for one operator-selected project. There are no sessions or
+  accounts. The listener refuses non-loopback binds before opening a socket;
+  Host and Origin checks are additional local restrictions, not authentication.
 - Compiler execution is a fixed-argv allowlist run inside
   filesystem-contained job workspaces. There is no path from browser input
   to an executable, a working directory, or a flag.
-- Source-file access, editing, publication, crawlers, and provider
+- Source reads require known regular Markdown files in retained snapshots,
+  validated relative paths, and matching snapshot IDs. Symlinks and escapes
+  are refused. Compiler bytes are digest-verified for every new capture.
+- Editing, preview transport, publication, crawlers, and provider
   integrations are **not implemented**. Their designs require the review
   gates in [the architecture](docs/architecture.md#security-and-deployment)
   and [the roadmap](docs/roadmap.md) — a successful prototype does not waive
@@ -26,7 +31,9 @@ Concretely, today:
 
 ## Environment files
 
-`.env.example` is a template; the development server reads `PORT` only.
+`.env.example` documents `PORT`, `OBSEQUIOUS_PROJECT_ROOT`, `BORIS_BIN`,
+and the loopback web proxy port. Configuration is process-environment input,
+never browser input, and dotenv files are not loaded automatically.
 Never commit real values. There are no provider secrets in this repository
 because no provider is connected.
 

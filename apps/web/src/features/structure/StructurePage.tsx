@@ -70,7 +70,8 @@ function ProblemsSection({ problems }: { problems: Problem[] }) {
             </Text>
             <Text type="supporting" color="secondary">
               {problem.severity} · {problem.sourcePath ?? 'no source location'}
-              {problem.line !== null ? `:${problem.line}` : ''} · origin:{' '}
+              {problem.line !== null ? `:${problem.line}` : ''}
+              {problem.column !== null ? `:${problem.column}` : ''} · origin:{' '}
               {problem.origin}
             </Text>
           </li>

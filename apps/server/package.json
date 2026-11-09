@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Obsequious application server (Fastify). The prototype exposes only a loopback health endpoint.",
+  "description": "Obsequious private read-only application server (Fastify).",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc --noEmit && vite build",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },

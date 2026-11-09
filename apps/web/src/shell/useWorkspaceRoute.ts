@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ClientMode } from '@obsequious/contracts';
 import {
   buildWorkspaceHref,
   parseScenarioParam,
@@ -15,11 +16,11 @@ export type WorkspaceRoute = {
   hrefFor: (workspace: Workspace) => string;
 };
 
-function readRoute(): { workspace: Workspace; scenario: string | null } {
+function readRoute(mode: ClientMode): { workspace: Workspace; scenario: string | null } {
   const search = window.location.search;
   return {
     workspace: parseWorkspace(search),
-    scenario: parseScenarioParam(search) || null,
+    scenario: mode === 'demo' ? parseScenarioParam(search) || null : null,
   };
 }
 
@@ -29,25 +30,25 @@ function readRoute(): { workspace: Workspace; scenario: string | null } {
  * pushState so switching workspaces does not reload the application or
  * recreate the injected client. Back and forward follow popstate.
  */
-export function useWorkspaceRoute(): WorkspaceRoute {
-  const [route, setRoute] = useState(readRoute);
+export function useWorkspaceRoute(mode: ClientMode = 'demo'): WorkspaceRoute {
+  const [route, setRoute] = useState(() => readRoute(mode));
 
   useEffect(() => {
     const onPopState = () => {
-      setRoute(readRoute());
+      setRoute(readRoute(mode));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  }, [mode]);
 
   const navigate = useCallback((workspace: Workspace) => {
-    const href = buildWorkspaceHref(workspace, parseScenarioParam(window.location.search));
+    const href = buildWorkspaceHref(workspace, mode === 'demo' ? parseScenarioParam(window.location.search) : null);
     if (href === `${window.location.pathname}${window.location.search}`) {
       return;
     }
     window.history.pushState(null, '', href);
-    setRoute(readRoute());
-  }, []);
+    setRoute(readRoute(mode));
+  }, [mode]);
 
   const hrefFor = useCallback(
     (workspace: Workspace) => buildWorkspaceHref(workspace, route.scenario),
