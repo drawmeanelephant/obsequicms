@@ -23,6 +23,22 @@ The planned layout has `apps/web`, `apps/server`, and `packages/contracts`.
 The server adapter belongs under `apps/server/src/boris`. The initial scaffold
 does not create unused packages or empty layers for hypothetical integrations.
 
+### Implemented M1 boundary
+
+The private read-only server uses a serialized in-process reader, not a durable
+job system. Each page-index request copies the operator-selected project,
+verifies the approved native compiler, and indexes/checks the isolated copy.
+Four immutable in-memory snapshot records are retained for revision-addressed
+source reads, then cleaned up on expiry or shutdown. Restart loses those IDs;
+unknown/expired IDs are explicit errors. The database/job/release designs below
+remain later milestones, not implemented M1 claims.
+
+The server build uses the existing Vite SSR bundler after TypeScript checks to
+bundle the workspace's source-exported contracts into native Node ESM. This
+avoids changing P01 schemas or requiring Node to load extensionless TypeScript
+imports. No dependency or language was added. The separate web entries share
+the application shell but never share demo data through the connected client.
+
 ## Ownership
 
 | Data | Canonical owner |

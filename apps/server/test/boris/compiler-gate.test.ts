@@ -4,6 +4,7 @@ import { cp, readFile, rm, writeFile } from 'node:fs/promises';
 import { closeSync, existsSync, fstatSync, openSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { approvedCompilerBuild } from '../../src/boris/provenance.js';
 
 import {
   acceptsCompilerId,
@@ -43,11 +44,6 @@ const EDITIONS_PROFILE = join(
   fileURLToPath(new URL('.', import.meta.url)),
   'fixtures',
   'boris-editions.json',
-);
-const PROVENANCE = join(
-  fileURLToPath(new URL('.', import.meta.url)),
-  'provenance',
-  'boris-0.9.0.json',
 );
 
 type ProvenanceRecord = {
@@ -100,7 +96,7 @@ beforeAll(async () => {
   if (!existsSync(executable)) {
     throw new Error(`BORIS_BIN does not exist: ${executable}`);
   }
-  provenance = JSON.parse(await readFile(PROVENANCE, 'utf8')) as ProvenanceRecord;
+  provenance = approvedCompilerBuild();
   if (
     provenance.format !== 'obsequious-boris-provenance' ||
     provenance.schema_version !== 1

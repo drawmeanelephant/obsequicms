@@ -1,6 +1,9 @@
 # Boris integration
 
-Status: contract research, not runtime integration verification.
+Status: P06 adapter and M1 private read-only integration verified against the
+approved native kits. See [binary provenance](boris-binary.md) and the
+[M1 report](work-reports/M1.md). Later authoring/publication sections remain
+design constraints, not implemented features.
 
 ## Source of truth
 
@@ -19,16 +22,19 @@ Before integration tests, obtain a reviewed Boris binary or an upstream
 Record its SHA-256, version, build information, platform, and source revision.
 Do not fetch and execute an unpinned binary during application startup.
 
-The available local binary reported `boris/0.8.2` with
+An older local binary reported `boris/0.8.2` with
 `vcsRevision: "1b0cb15d.dirty"` during planning. It is not accepted evidence for
-this baseline. No current-version compile or compatibility test has run.
+this baseline. The approved Darwin and Linux kits instead use the clean pinned
+source revision and separate exact digests. The real compiler gate does not
+accept an arbitrary local binary.
 
 ## Fixed process operations
 
 Every operation runs inside its own server-owned job workspace. The server
 creates `.obsequious/` for fresh reports before invocation. The executable and
-argv are server-owned. These are proposed allowlisted invocations, transcribed
-from the contracts, not commands verified against a pinned binary:
+argv are server-owned. These fixed allowlisted operations are exercised by
+the real compiler gate. M1 invokes identity, profile validation when present,
+source indexing, and graph checks, not preview or publication:
 
 | Operation | Argv after the executable |
 | --- | --- |
@@ -71,7 +77,9 @@ The UI preserves the difference between unsupported and an empty valid site.
 
 On content failure, IR publishes a failure report without graph-dependent
 artifacts. On process or I/O failure, output can be missing or partial.
-The application keeps any earlier valid graph explicitly stale.
+M1 returns a fresh unavailable graph after a content failure and never reuses
+old artifacts as current. Later persistent graph history may retain earlier
+graphs only as explicitly stale data.
 
 Exit outcomes are success for 0, content for 1, usage for 2, I/O for 3, and
 terminated for a signal, timeout, overrun, or unexpected exit code.
@@ -88,6 +96,12 @@ Initial editing changes raw UTF-8 source. Structured title, parent, tag, or
 status controls require a byte-preserving authoring adapter, candidate
 validation, and LF and CRLF round-trip tests. Parent-only changes must not
 rename source or change explicit identity.
+
+The application raw-source limit is 8 MiB. Boris's pinned normative
+`frontmatter.md` bounds parsed page source at 1 MiB. These limits are separate:
+M1 displays the real located size refusal and does not increase, bypass, or
+reimplement the compiler's parser. Raw retained UTF-8 source remains readable
+through the source API up to the application limit.
 
 The initial UI reads compiler summaries and graph endpoints. Asides are in-page
 tokens, not pages. Includes can name source-only endpoints. Navigation and

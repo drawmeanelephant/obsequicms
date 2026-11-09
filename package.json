@@ -15,13 +15,15 @@
   ],
   "scripts": {
     "dev:demo": "npm run dev --workspace @obsequious/web",
+    "dev:connected": "npm run dev:connected --workspace @obsequious/web",
     "dev:server": "npm run dev --workspace @obsequious/server",
     "build": "npm run build --workspace @obsequious/server && npm run build --workspace @obsequious/web",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspace @obsequious/contracts && npm run typecheck --workspace @obsequious/server && npm run typecheck --workspace @obsequious/web",
     "test": "vitest run",
     "test:boris": "vitest run --config vitest.boris.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:connected": "playwright test --config playwright.connected.config.ts"
   },
   "devDependencies": {
     "@astryxdesign/cli": "0.7.11",

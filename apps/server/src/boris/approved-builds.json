@@ -1,0 +1,42 @@
+{
+  "format": "obsequious-approved-boris-builds",
+  "schema_version": 1,
+  "builds": {
+    "linux-x64": {
+      "format": "obsequious-boris-provenance",
+      "schema_version": 1,
+      "compilerId": "boris/0.9.0",
+      "sourceRevision": "c50d8622bd407bcb5f559a4d7ed5da440a2259ec",
+      "binary": {
+        "sha256": "b5d72e0751b73e56622b58d3380578aec41a01c463bf50ff6fc0787c5690420a",
+        "platform": "Linux-x86_64",
+        "buildInfo": {
+          "format": "boris-build-info",
+          "schemaVersion": "1",
+          "version": "boris/0.9.0",
+          "vcsRevision": "c50d8622"
+        }
+      },
+      "kit": {
+        "archiveSha256": "c90c0beddbae83f847121bf3b53ab227b3890dc1d92544dd118f39e88ba57527",
+        "zigVersion": "0.17.1"
+      }
+    },
+    "darwin-arm64": {
+      "format": "obsequious-boris-provenance",
+      "schema_version": 1,
+      "compilerId": "boris/0.9.0",
+      "sourceRevision": "c50d8622bd407bcb5f559a4d7ed5da440a2259ec",
+      "binary": {
+        "sha256": "9d2e3f0a07524ffe479287c8088796b4bb2de497838866734fefda21c6f34d8c",
+        "platform": "Darwin-arm64",
+        "buildInfo": {
+          "format": "boris-build-info",
+          "schemaVersion": "1",
+          "version": "boris/0.9.0",
+          "vcsRevision": "c50d8622"
+        }
+      }
+    }
+  }
+}
