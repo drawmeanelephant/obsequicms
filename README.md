@@ -100,6 +100,11 @@ machine-local artifact that is not published, so no real-compiler coverage
 is claimed on CI. Running the gate remains a local step for anyone holding
 the approved binary.
 
+CodeQL scans JavaScript/TypeScript and GitHub Actions on PRs, on `main`, and
+weekly. Dependency review rejects newly introduced high or critical known
+vulnerabilities in PRs. Dependabot opens reviewable npm and action update PRs;
+updates are not automatically merged.
+
 ## Contributing
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers packet ownership, the checks each
@@ -111,11 +116,17 @@ compiler evidence honestly separated.
 [SECURITY.md](SECURITY.md) records the current posture. In short: this is a
 pre-release application with no approved public hosting, no authenticated
 editing workflow, and loopback-only listeners; do not deploy it publicly.
-No security contact is established yet.
+Use [GitHub's private vulnerability reporting](https://github.com/drawmeanelephant/obsequicms/security/advisories/new)
+for security reports. Repository scanning is not a production security review.
 
 ## Repository status
 
 The owner selected [drawmeanelephant/obsequicms](https://github.com/drawmeanelephant/obsequicms)
-as the private source repository. Source publication is not deployment or
+as the public source repository. Source publication is not deployment or
 production readiness. No project license has been chosen, and this project is
 not offered as open source. No application deployment is part of this work.
+
+Changes to `main` require a PR, up-to-date CI, and resolved conversations,
+including for admins. Force pushes and deleting `main` are blocked. Merged
+head branches are automatically deleted. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the solo-maintainer review policy.

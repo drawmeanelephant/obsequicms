@@ -3,9 +3,10 @@
 ## Status: pre-release, local-only
 
 Obsequious is a pre-release application. It has **no approved public
-hosting, no authenticated editing workflow, and no supported production installation**. Do
-not deploy it on a public host, tunnel it to the internet, or expose it
-beyond your machine.
+hosting, no authenticated editing workflow, and no supported production
+installation**. Do not deploy it on a public host, tunnel it to the internet,
+or expose it beyond your machine. Public source availability does not change
+these runtime restrictions.
 
 Concretely, today:
 
@@ -31,11 +32,30 @@ because no provider is connected.
 
 ## Reporting a problem
 
-No dedicated security contact exists yet, and none is invented here. Contact
-the repository owner through an existing private channel. GitHub private
-vulnerability reporting has not been configured or verified; publishing source
-does not enable it. Do not open public issues for security problems.
+Use [GitHub's private vulnerability reporting](https://github.com/drawmeanelephant/obsequicms/security/advisories/new).
+It is enabled for this repository. Do not open public issues or PRs containing
+vulnerability details, credentials, or private source content. If that route
+is unavailable, contact the owner through an existing private channel.
 
-A security contact will be established before any public deployment is
-approved — deployment itself remains gated behind the authentication and
-release-safety milestones.
+Include the affected commit, reproduction steps, impact, and a minimal
+sanitized example. No dedicated email address, response-time guarantee,
+bounty, or production-support commitment is established.
+
+## Repository safeguards
+
+- Secret scanning and push protection are enabled. They do not detect every
+  secret; never commit credentials. If one leaks, revoke it before discussing
+  history remediation with the owner. Do not rewrite history unilaterally.
+- Dependabot alerts and security updates are enabled. Weekly npm and GitHub
+  Actions update PRs remain subject to the same merge gates as other PRs.
+- CodeQL scans JavaScript/TypeScript and workflows. Dependency review checks
+  PR dependency changes for high or critical known vulnerabilities.
+- Actions use full commit pins and read-only default tokens. Only GitHub-owned
+  actions are allowed; CodeQL's analysis job alone requests security-report
+  upload permission. Fork workflows from external contributors need approval.
+- `main` requires PRs, current CI, and resolved conversations, even for admins.
+  Force pushes and branch deletion are blocked.
+
+These controls are not a guarantee of security or a substitute for the
+authentication, source, process, and release review gates. No license has
+been chosen. Deployment remains outside this repository-setup work.
