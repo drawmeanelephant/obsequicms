@@ -259,3 +259,102 @@ Acceptance:
 - `BORIS_BIN=/absolute/path/to/pinned/boris npm run test:boris` passes.
   Missing or wrong binaries fail this explicit command rather than silently skip.
 - The report separates real compiler evidence from stub-based process tests.
+
+## M1: connect one real project, read-only
+
+Suitability: higher-reasoning implementation. This is the first connected
+backend packet and inherits a review obligation, not a template.
+
+Depends on the P06 follow-up (adapter hardening, commit `8139ff0` or later)
+and the binary-provenance gate. Read [the integration specification](boris-integration.md),
+[the API contracts](api.md), [the architecture](architecture.md), and
+[the adapter hardening report](work-reports/P06-followup.md). Own
+`apps/server/src/**` (new modules plus the entry point composition), a
+separate connected web entry, and their tests. Reuse `packages/contracts`
+schemas as they are; changes there need a handoff with the P01 owner.
+
+### Scope
+
+1. **Server-selected project root.** Exactly one real Boris project is
+   selected by server-owned configuration (an operator-provided absolute
+   path in server configuration, documented in `.env.example` or a
+   configuration module). The browser can never choose, influence, or
+   enumerate paths, executables, flags, or workspace locations. Requests
+   carry entity IDs and validated `SourcePath` values only.
+2. **Isolated snapshot.** Before any compiler run, copy the selected
+   project into a server-owned job workspace (workspace.ts). The compiler
+   never runs against the live tree, and nothing writes to the live tree.
+   The snapshot records the source revision identity the application uses.
+3. **Real page and relationship data.** Map `indexSource` artifacts
+   (manifest, frozen graph, completion) to the `PageIndex` contract of
+   [the API specification](api.md): entity IDs, titles, source paths,
+   parentage, roles, statuses, tags, and `parent`/`include`/`reference`
+   dependencies in the compiler's documented direction. Boris is
+   authoritative; nothing here re-resolves the graph, infers parentage
+   from folders, or promotes source-only includes to pages. Unsupported
+   producer versions are the explicit `unsupported` state — never an empty
+   valid site.
+4. **Raw source.** Serve exact UTF-8 source bytes for a validated
+   project-relative path below the snapshot's content root, through the
+   same filesystem containment rules as the adapter
+   (`resolveContainedPath`): traversal, symlinks, absolute paths, and
+   escapes are refused. The 8 MiB per-file limit applies. Read-only: no
+   save endpoint exists in this packet.
+5. **Located compiler diagnostics.** On a content outcome, expose the
+   parsed `failureReport` diagnostics (severity, code, message,
+   remediation, source path, line, column) as the problem list of an
+   explicitly `unavailable` graph state — never as a valid graph, never by
+   re-parsing stderr, and never reusing an earlier revision's report. After
+   a successful run, show real `check`/`impact` results through the
+   operation adapters when the UI needs them.
+
+### Private transport requirements
+
+- The listener stays **loopback-only** (the P00 entry already pins the
+  host; keep the pin and add a test proving a non-loopback bind fails).
+  There is no authentication in this packet — which is exactly why the
+  transport must remain private. Do not deploy, tunnel, or reverse-proxy
+  it; [SECURITY.md](../SECURITY.md) says why.
+- All endpoints except `GET /api/v1/health` are still unimplemented
+  surface: implement only `GET /api/v1/site`, `GET /api/v1/pages`, and
+  `GET /api/v1/source` from
+  [the contracts](api.md#http-and-client-interface), with the documented
+  error shape and codes. Mutation endpoints remain absent, not stubbed to
+  succeed.
+- Responses use the contract schemas; unknown fields are rejected on any
+  request body that exists; forwarded producer fields keep their original
+  names and versions.
+- The demo entry and the connected entry stay separate compositions: the
+  connected entry never imports demo scenarios, and the demo entry keeps
+  its persistent "Demo data" label. The connected UI labels its data as
+  real and shows the source revision it came from.
+
+### Acceptance
+
+- With a valid hand-authored real project, the connected pages endpoint
+  returns the project's real page index from the pinned compiler, matching
+  the fixture's known structure, and the source endpoint returns exact
+  bytes for a known file.
+- Containment tests prove refusal of traversal, symlinks, absolute paths,
+  and unknown paths on the source endpoint, and that a run-planted
+  symlink cannot redirect a read outside the snapshot.
+- A content failure in the connected project yields an explicit
+  unavailable state whose problems carry the compiler's located
+  diagnostics (code, source path, line, column), and repairing the source
+  yields a current state without stale reuse.
+- Snapshot isolation is tested: mutating the live project tree during or
+  after indexing does not change that run's results, and the live tree is
+  byte-identical after every operation (the gate's unchanged-bytes check,
+  repeated at this boundary).
+- The non-loopback bind refusal, the loopback health endpoint, and the
+  three implemented endpoints are covered by server tests; the six
+  standard commands and the real compiler gate pass.
+- Existing demo browser tests still pass unchanged.
+
+### Non-goals (explicitly out of scope)
+
+Authentication or sessions, source editing or saves, publication or
+releases, RSS, crawlers, analytics or provider connections, multiple
+projects or sites, container or remote deployment, and any production
+hardening. Each of those retains its own design and review gate.
+

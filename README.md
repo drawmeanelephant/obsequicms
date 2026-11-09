@@ -13,14 +13,33 @@ independent of the admin application's availability.
 
 ## Current state
 
-M0 prototype: an Astryx (React 19) application with a working Structure
-workspace and Site Readiness workspace over explicitly labeled demo data,
-plus an application-server scaffold with a loopback health endpoint. No
-account, real source store, compiler connection, public deployment, or
-audit coverage exists. Every screen labels its data as demo data.
+This repository has three layers with different maturity. Do not mistake one
+for another.
 
-The next milestone connects real source files and a pinned Boris binary
-(P06). Public deployment follows authentication and release-safety work.
+**1. The demo interface — works today.**
+An Astryx (React 19) application with a working Structure workspace (outline
+and inventory views, search, filters, an inspector with dependency details)
+and a Site Readiness workspace. Every screen renders explicitly labeled demo
+data with a persistent "Demo data" label; a failed request never falls back
+to sample data. Start it with `npm run dev:demo` (loopback only).
+
+**2. The real compiler adapter — proven against a pinned Boris binary.**
+`apps/server/src/boris/` implements the bounded process adapter (fixed argv
+arrays, no shell, deadlines, separate output caps, termination escalation),
+unique filesystem-contained job workspaces, producer artifact parsers (IR
+`0.2.0`, `html-build-report-0.2.0`, `boris-documentation-intelligence` `0.2.0`),
+and the six allowlisted compiler operations from
+[the integration contract](docs/boris-integration.md). The explicit gate
+(`npm run test:boris`) proves it against a digest-pinned `boris/0.9.0`
+binary — real nested pages, real findings, real impact results, real content
+failures with located diagnostics. This is a server library layer: it is
+**not reachable over HTTP** and **not wired into the demo interface**.
+
+**3. The connected backend — not implemented.**
+There is no source store, no job runner, no sessions or authentication, no
+application API beyond a loopback-only health endpoint, no publication, and
+no analytics or provider connections. [The API contracts](docs/api.md) fix
+the planned boundary; nothing serves it yet.
 
 ## Read the plan
 
@@ -33,24 +52,17 @@ The next milestone connects real source files and a pinned Boris binary
 - [Decisions and evidence](docs/decisions.md) records defaults and unresolved work.
 - [Agent rules](AGENTS.md) constrains implementation and handoffs.
 
-## Start the implementation
+## Requirements and setup (fresh clone)
 
-M0 (P00–P05) is implemented on the `m0-prototype` branch; see
-[the work reports](docs/work-reports). P06 — the real compiler adapter
-proof against a pinned binary — is the next packet.
-
-The first wave needs no account credentials or public network listener. Do not
-substitute demo data when a real API or compiler request fails.
-
-## Development commands
-
-Requirements: Node 24 and real npm 11 (`.node-version` pins `24.22.2`;
-`engines` enforces the range). The repository keeps a pinned local
-toolchain in the git-ignored `.tooling/node/` directory on the machine
-where it was set up; a fresh clone can supply Node 24 any way it prefers.
+- Node 24 — `.node-version` pins `24.22.2` for version managers; `engines`
+  (enforced by `.npmrc`) requires Node `>=24 <25` and real npm `11`.
+  Any Node 24 source works: a version manager, a system package, or the
+  official installer. The repository does not depend on a machine-local
+  toolchain.
+- No accounts, services, network access, or environment files are needed for
+  development; all development listeners are loopback-only.
 
 ```sh
-# with a Node 24 / npm 11 toolchain first on PATH
 npm ci
 npm run lint
 npm run typecheck
@@ -61,19 +73,45 @@ npm run dev:demo   # labeled demo prototype on http://127.0.0.1:5173
 npm run dev:server # loopback-only health endpoint on http://127.0.0.1:8787
 ```
 
-The real compiler gate runs separately and requires a pinned Boris binary:
+## The real compiler gate
+
+The adapter's real-compiler tests run separately from the standard suite and
+require the pinned Boris binary:
 
 ```sh
 BORIS_BIN=/absolute/path/to/pinned/boris npm run test:boris
 ```
 
-A missing or incompatible binary fails the gate instead of skipping it.
-See [the P06 provenance record](apps/server/test/boris/provenance/boris-0.9.0.json)
-for the recorded compiler build and
-[the P06 report](docs/work-reports/P06.md) for the real-versus-stub evidence
-separation.
+A missing binary, or one whose SHA-256 does not match the committed
+provenance record, **fails** this command — it is never silently skipped,
+and no stub substitutes for a real run. Where the binary comes from, how its
+digest is verified, and the current platform restriction are documented in
+[docs/boris-binary.md](docs/boris-binary.md).
+
+## Continuous integration
+
+CI (`.github/workflows/ci.yml`) runs on Node `24.22.2`: install, lint,
+typecheck, the standard unit/component suites, build, and the browser tests.
+It does **not** run `npm run test:boris` — the pinned binary is a
+machine-local artifact that is not published, so no real-compiler coverage
+is claimed on CI. Running the gate remains a local step for anyone holding
+the approved binary.
+
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers packet ownership, the checks each
+change must pass, and the rules that keep demo data, failures, and real
+compiler evidence honestly separated.
+
+## Security posture
+
+[SECURITY.md](SECURITY.md) records the current posture. In short: this is a
+pre-release application with no approved public hosting, no authenticated
+editing workflow, and loopback-only listeners; do not deploy it publicly.
+No security contact is established yet.
 
 ## Repository status
 
-The initial planning work is local. No GitHub repository, remote, or visibility
-has been selected. The project license also remains unselected.
+The project is pre-release and local. No GitHub repository, remote, or
+visibility has been selected, and no project license has been chosen — both
+remain explicit owner decisions. Nothing is deployed anywhere.

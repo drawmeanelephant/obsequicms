@@ -1,5 +1,11 @@
 name: CI
 
+# The six standard gates. The real-compiler gate (npm run test:boris) is
+# intentionally NOT run here: it requires the digest-pinned boris/0.9.0
+# binary, which is a machine-local artifact and is not published
+# (docs/boris-binary.md). No real-compiler coverage is claimed on CI;
+# the standard suite's stub-based process tests run everywhere.
+
 on:
   push:
     branches: [main]
