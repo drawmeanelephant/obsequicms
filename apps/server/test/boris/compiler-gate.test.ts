@@ -195,23 +195,89 @@ describe('real compiler gate: index operation', () => {
 });
 
 describe('real compiler gate: analysis and profile operations', () => {
-  it('reports graph health as documentation intelligence', async () => {
+  it('reports graph health with the compiler’s actual findings, not just a header', async () => {
     const result = await checkGraph(executable, workspace);
     expect(result.process.outcome).toBe('success');
+    expect(result.failureReport).toBeNull();
     if (!result.artifacts) throw new Error('artifacts missing on success');
-    expect(result.artifacts.report.format).toBe(
-      'boris-documentation-intelligence',
-    );
-    expect(result.artifacts.report.compiler).toBe('boris/0.9.0');
+    const { report } = result.artifacts;
+    expect(report.format).toBe('boris-documentation-intelligence');
+    expect(report.compiler).toBe('boris/0.9.0');
+    expect(report.input).toBe('content');
+    expect(report.summary.pages).toBe(4);
+    // The real finding for this fixture, with its source location.
+    expect(report.findings).toEqual([
+      {
+        code: 'unreferenced_page',
+        type: 'page',
+        value: 'index',
+        count: 0,
+        sourcePath: 'index.md',
+        line: 1,
+        column: 1,
+      },
+    ]);
+    // A check report carries no impact result.
+    expect(report.impact).toBeNull();
+    expect(report.diagnostics).toEqual([]);
   });
 
-  it('emits impact dependents for an opaque entity id', async () => {
+  it('emits the actual affected pages for an impact query', async () => {
     const result = await impactOf(executable, workspace, 'guides/ferns');
     expect(result.process.outcome).toBe('success');
     if (!result.artifacts) throw new Error('artifacts missing on success');
-    expect(result.artifacts.report.compiler).toBe('boris/0.9.0');
+    const { report } = result.artifacts;
+    expect(report.compiler).toBe('boris/0.9.0');
+    // The producer's sorted transitive dependents of guides/ferns,
+    // preserved verbatim by the adapter.
+    expect(report.impact).toEqual([
+      { type: 'page', value: 'about' },
+      { type: 'page', value: 'guides/ferns-care' },
+      { type: 'page', value: 'index' },
+    ]);
     // The impact query names the queried id without reinterpretation.
     expect(result.process.stdout).toBe('');
+  });
+
+  it('preserves a legitimate empty impact result and corpus-level graph findings', async () => {
+    // A one-page corpus has no dependents at all: the impact result is a
+    // real empty array — never null, never a missing artifact.
+    const single = await createJobWorkspace();
+    try {
+      const { mkdir } = await import('node:fs/promises');
+      await mkdir(join(single.root, 'content'), { recursive: true });
+      await writeFile(
+        join(single.root, 'content', 'index.md'),
+        '---\ntitle: Home\n---\n\n# Home\n',
+        'utf8',
+      );
+      const result = await impactOf(executable, single, 'index');
+      expect(result.process.outcome).toBe('success');
+      if (!result.artifacts) throw new Error('artifacts missing on success');
+      expect(result.artifacts.report.impact).toEqual([]);
+      // Corpus-level advisories name the whole graph with null locations;
+      // the `graph` endpoint type appears only in findings.
+      const codes = result.artifacts.report.findings.map((finding) => finding.code);
+      expect(codes).toContain('zero_includes');
+      expect(codes).toContain('zero_relations');
+      const corpusFinding = result.artifacts.report.findings.find(
+        (finding) => finding.code === 'zero_includes',
+      );
+      expect(corpusFinding?.type).toBe('graph');
+      expect(corpusFinding?.value).toBe('corpus');
+      expect(corpusFinding?.sourcePath).toBeNull();
+    } finally {
+      await single.cleanup();
+    }
+  });
+
+  it('reports an unknown impact target as a usage outcome with no report', async () => {
+    const result = await impactOf(executable, workspace, 'does-not-exist');
+    expect(result.process.outcome).toBe('usage');
+    expect(result.process.exitCode).toBe(2);
+    expect(result.artifacts).toBeNull();
+    expect(result.failureReport).toBeNull();
+    expect(result.process.stderr).toMatch(/not found/);
   });
 
   it('validates the supported single-target HTML profile', async () => {
@@ -281,22 +347,73 @@ describe('real compiler gate: failure handling', () => {
       false,
     );
 
-    // The failure report itself is fresh and carries the diagnostics.
-    const report = JSON.parse(
-      await readFile(
-        join(workspace.root, REPORT_PATHS.irDir, 'build-report.json'),
-        'utf8',
-      ),
-    ) as { ok: boolean; errorCount: number; diagnostics: Array<{ code: string }> };
-    expect(report.ok).toBe(false);
-    expect(report.errorCount).toBe(1);
-    expect(report.diagnostics[0]?.code).toBe('EPARENTMISSING');
+    // The fresh failure report is parsed and exposed with its located
+    // diagnostics — without ever presenting a failed graph as valid.
+    if (!failure.failureReport) throw new Error('failure report missing');
+    expect(failure.failureReport.ok).toBe(false);
+    expect(failure.failureReport.errorCount).toBe(1);
+    expect(failure.failureReport.diagnostics[0]?.code).toBe('EPARENTMISSING');
+    expect(failure.failureReport.diagnostics[0]?.sourcePath).toBe('broken.md');
+    expect(failure.failureReport.diagnostics[0]?.line).toBe(3);
 
     // Restore the valid tree and confirm the next run succeeds again.
     await rm(join(workspace.root, 'content', 'broken.md'), { force: true });
     const recovered = await indexSource(executable, workspace);
     expect(recovered.process.outcome).toBe('success');
     expect(recovered.artifacts?.buildReport.ok).toBe(true);
+    expect(recovered.failureReport).toBeNull();
+  });
+
+  it('classifies content failures in the analysis operations without missing-artifact exceptions, and recovers after repair', async () => {
+    // A page whose parent does not exist: an ordinary content failure.
+    await writeFile(
+      join(workspace.root, 'content', 'broken.md'),
+      '---\ntitle: Broken\nparent: does-not-exist\n---\n\n# Broken\n',
+      'utf8',
+    );
+    try {
+      // Graph-dependent analysis publishes no report on a content
+      // failure; the operations return the outcome instead of throwing
+      // ArtifactError("missing") from a doomed report read.
+      const health = await checkGraph(executable, workspace);
+      expect(health.process.outcome).toBe('content');
+      expect(health.process.exitCode).toBe(1);
+      expect(health.artifacts).toBeNull();
+      expect(health.failureReport).toBeNull();
+      expect(
+        existsSync(join(workspace.root, REPORT_PATHS.check)),
+      ).toBe(false);
+
+      const impact = await impactOf(executable, workspace, 'index');
+      expect(impact.process.outcome).toBe('content');
+      expect(impact.artifacts).toBeNull();
+      expect(impact.failureReport).toBeNull();
+
+      // The HTML path publishes failure reports on a content outcome;
+      // the adapter parses them as failureReport, never as artifacts.
+      const preview = await buildPreview(executable, workspace);
+      expect(preview.process.outcome).toBe('content');
+      expect(preview.artifacts).toBeNull();
+      if (!preview.failureReport) throw new Error('failure report missing');
+      expect(preview.failureReport.ok).toBe(false);
+      expect(preview.failureReport.diagnostics[0]?.code).toBe('EPARENTMISSING');
+      expect(preview.failureReport.diagnostics[0]?.sourcePath).toBe('broken.md');
+
+      const validate = await validateProfile(executable, workspace);
+      expect(validate.process.outcome).toBe('content');
+      expect(validate.artifacts).toBeNull();
+      expect(validate.failureReport?.ok).toBe(false);
+    } finally {
+      // Repair the source: the same operations succeed again and the
+      // failure reports disappear.
+      await rm(join(workspace.root, 'content', 'broken.md'), { force: true });
+    }
+    const repairedHealth = await checkGraph(executable, workspace);
+    expect(repairedHealth.process.outcome).toBe('success');
+    expect(repairedHealth.artifacts?.report.findings.length).toBeGreaterThan(0);
+    const repairedImpact = await impactOf(executable, workspace, 'guides/ferns');
+    expect(repairedImpact.process.outcome).toBe('success');
+    expect(repairedImpact.artifacts?.report.impact).toHaveLength(3);
   });
 
   it('surfaces an unsupported profile declaration as a usage outcome that names it', async () => {

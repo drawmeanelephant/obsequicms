@@ -606,12 +606,90 @@ export function parseHtmlBuildReport(
   };
 }
 
+/**
+ * Advisory or policy finding from `check`/`impact` reports. `type`/`value`
+ * name the finding's endpoint; corpus-level advisories name the whole graph
+ * (`{"type": "graph", "value": "corpus"}`) with null location fields — the
+ * `graph` endpoint type appears only in findings, never in nodes, edges,
+ * impact, or source locations.
+ */
+export type BorisFinding = {
+  code: string;
+  type: 'page' | 'source' | 'graph';
+  value: string;
+  count: number;
+  sourcePath: string | null;
+  line: number | null;
+  column: number | null;
+};
+
+export type BorisAnalysisSummary = {
+  pages: number;
+  roots: number;
+  satellites: number;
+  sourceEndpoints: number;
+  edgeCounts: {
+    incoming: { pages: BorisEdgeKindCounts; sources: BorisEdgeKindCounts };
+    outgoing: { pages: BorisEdgeKindCounts; sources: BorisEdgeKindCounts };
+  };
+  unreferencedPages: number;
+  hotspots: number;
+};
+
+export type BorisEdgeKindCounts = {
+  parent: number;
+  include: number;
+  reference: number;
+};
+
+/** Consumer-facing page node projection in `check`/`impact` reports. */
+export type BorisAnalysisNode = {
+  type: 'page';
+  id: string;
+  sourcePath: string;
+  parent: string | null;
+};
+
+/** Located source position of a page or source endpoint. */
+export type BorisAnalysisSourceLocation = {
+  type: 'page' | 'source';
+  value: string;
+  sourcePath: string;
+  line: number;
+  column: number;
+};
+
+/** Compatibility page summary in `check`/`impact` reports. */
+export type BorisAnalysisPageSummary = {
+  id: string;
+  parent: string | null;
+};
+
+/**
+ * A full `boris-documentation-intelligence` report (schema 0.2.0): the
+ * complete analysis payload the producer publishes — summary counts, the
+ * consumer-facing nodes/edges projection, source locations, findings, the
+ * impact result (null for `check`), and diagnostics. This is shape
+ * validation at the artifact boundary only: Boris remains authoritative for
+ * graph semantics, and nothing here resolves, filters, or recomputes the
+ * producer's graph.
+ */
 export type BorisDocumentationIntelligenceReport = {
   format: 'boris-documentation-intelligence';
-  schemaVersion: string;
+  schemaVersion: '0.2.0';
   compiler: string;
-  /** The operation kind the report records (e.g. check, impact). */
-  kind: string | null;
+  /** The analyzed input path exactly as the producer recorded it. */
+  input: string;
+  summary: BorisAnalysisSummary;
+  nodes: BorisAnalysisNode[];
+  edges: BorisEdge[];
+  sourceLocations: BorisAnalysisSourceLocation[];
+  pages: BorisAnalysisPageSummary[];
+  sources: string[];
+  findings: BorisFinding[];
+  /** Sorted transitive dependents; null for `check` reports. */
+  impact: BorisEndpoint[] | null;
+  diagnostics: BorisDiagnostic[];
 };
 
 export function parseDocumentationIntelligenceReport(
@@ -642,8 +720,239 @@ export function parseDocumentationIntelligenceReport(
     format: 'boris-documentation-intelligence',
     schemaVersion: version,
     compiler,
-    kind: typeof record.kind === 'string' ? record.kind : null,
+    input: requireString(record, 'input', path),
+    summary: parseAnalysisSummary(record.summary, path),
+    nodes: parseAnalysisNodes(record.nodes, path),
+    edges: parseEdges(record.edges, path),
+    sourceLocations: parseAnalysisSourceLocations(record.sourceLocations, path),
+    pages: parseAnalysisPageSummaries(record.pages, path),
+    sources: parseSourceNames(record.sources, path),
+    findings: parseFindings(record.findings, path),
+    impact: parseNullableImpact(record.impact, path),
+    diagnostics: parseDiagnostics(record.diagnostics, path),
   };
+}
+
+function parseAnalysisSummary(value: unknown, path: string): BorisAnalysisSummary {
+  const record = asObject(value, path);
+  const edgeCountsRecord = asObject(record.edgeCounts, path);
+  return {
+    pages: requireCount(record, 'pages', path),
+    roots: requireCount(record, 'roots', path),
+    satellites: requireCount(record, 'satellites', path),
+    sourceEndpoints: requireCount(record, 'sourceEndpoints', path),
+    edgeCounts: {
+      incoming: parseDirectionEdgeCounts(edgeCountsRecord.incoming, path),
+      outgoing: parseDirectionEdgeCounts(edgeCountsRecord.outgoing, path),
+    },
+    unreferencedPages: requireCount(record, 'unreferencedPages', path),
+    hotspots: requireCount(record, 'hotspots', path),
+  };
+}
+
+function parseDirectionEdgeCounts(
+  value: unknown,
+  path: string,
+): { pages: BorisEdgeKindCounts; sources: BorisEdgeKindCounts } {
+  const record = asObject(value, path);
+  return {
+    pages: parseEdgeKindCounts(record.pages, path),
+    sources: parseEdgeKindCounts(record.sources, path),
+  };
+}
+
+function parseEdgeKindCounts(value: unknown, path: string): BorisEdgeKindCounts {
+  const record = asObject(value, path);
+  return {
+    parent: requireCount(record, 'parent', path),
+    include: requireCount(record, 'include', path),
+    reference: requireCount(record, 'reference', path),
+  };
+}
+
+function parseAnalysisNodes(value: unknown, path: string): BorisAnalysisNode[] {
+  if (!Array.isArray(value)) {
+    throw new ArtifactError('invalid', path, 'report nodes is not an array');
+  }
+  return value.map((entry) => {
+    const record = asObject(entry, path);
+    const type = requireString(record, 'type', path);
+    if (type !== 'page') {
+      throw new ArtifactError(
+        'invalid',
+        path,
+        `analysis node type "${type}" is not page`,
+      );
+    }
+    const parent = record.parent;
+    if (parent !== null && typeof parent !== 'string') {
+      throw new ArtifactError(
+        'invalid',
+        path,
+        'analysis node parent is neither a string nor null',
+      );
+    }
+    return {
+      type: 'page',
+      id: requireString(record, 'id', path),
+      sourcePath: requireString(record, 'sourcePath', path),
+      parent,
+    };
+  });
+}
+
+function parseEdges(value: unknown, path: string): BorisEdge[] {
+  if (!Array.isArray(value)) {
+    throw new ArtifactError('invalid', path, 'report edges is not an array');
+  }
+  return value.map((entry) => parseEdge(entry, path));
+}
+
+function parseAnalysisSourceLocations(
+  value: unknown,
+  path: string,
+): BorisAnalysisSourceLocation[] {
+  if (!Array.isArray(value)) {
+    throw new ArtifactError(
+      'invalid',
+      path,
+      'report sourceLocations is not an array',
+    );
+  }
+  return value.map((entry) => {
+    const record = asObject(entry, path);
+    const type = requireString(record, 'type', path);
+    if (type !== 'page' && type !== 'source') {
+      throw new ArtifactError(
+        'invalid',
+        path,
+        `source location type "${type}" is not page or source`,
+      );
+    }
+    return {
+      type,
+      value: requireString(record, 'value', path),
+      sourcePath: requireString(record, 'sourcePath', path),
+      line: requirePositiveInteger(record, 'line', path),
+      column: requirePositiveInteger(record, 'column', path),
+    };
+  });
+}
+
+function parseAnalysisPageSummaries(
+  value: unknown,
+  path: string,
+): BorisAnalysisPageSummary[] {
+  if (!Array.isArray(value)) {
+    throw new ArtifactError('invalid', path, 'report pages is not an array');
+  }
+  return value.map((entry) => {
+    const record = asObject(entry, path);
+    const parent = record.parent;
+    if (parent !== null && typeof parent !== 'string') {
+      throw new ArtifactError(
+        'invalid',
+        path,
+        'analysis page parent is neither a string nor null',
+      );
+    }
+    return {
+      id: requireString(record, 'id', path),
+      parent,
+    };
+  });
+}
+
+function parseSourceNames(value: unknown, path: string): string[] {
+  if (!Array.isArray(value)) {
+    throw new ArtifactError('invalid', path, 'report sources is not an array');
+  }
+  return value.map((entry) => {
+    if (typeof entry !== 'string') {
+      throw new ArtifactError(
+        'invalid',
+        path,
+        'report source name is not a string',
+      );
+    }
+    return entry;
+  });
+}
+
+function parseFindings(value: unknown, path: string): BorisFinding[] {
+  if (!Array.isArray(value)) {
+    throw new ArtifactError('invalid', path, 'report findings is not an array');
+  }
+  return value.map((entry) => {
+    const record = asObject(entry, path);
+    const type = requireString(record, 'type', path);
+    if (type !== 'page' && type !== 'source' && type !== 'graph') {
+      throw new ArtifactError(
+        'invalid',
+        path,
+        `finding type "${type}" is not page, source, or graph`,
+      );
+    }
+    return {
+      code: requireString(record, 'code', path),
+      type,
+      value: requireString(record, 'value', path),
+      count: requireCount(record, 'count', path),
+      sourcePath: nullableString(record.sourcePath, path, 'sourcePath'),
+      line: nullableInteger(record.line, path, 'line'),
+      column: nullableInteger(record.column, path, 'column'),
+    };
+  });
+}
+
+/** `impact` is null for `check` reports and an endpoint array for `impact`. */
+function parseNullableImpact(
+  value: unknown,
+  path: string,
+): BorisEndpoint[] | null {
+  if (value === null) {
+    return null;
+  }
+  if (!Array.isArray(value)) {
+    throw new ArtifactError(
+      'invalid',
+      path,
+      'report impact is neither null nor an array',
+    );
+  }
+  return value.map((entry) => parseEndpoint(entry, path));
+}
+
+function requireCount(
+  record: Record<string, unknown>,
+  field: string,
+  path: string,
+): number {
+  const value = requireNumber(record, field, path);
+  if (value < 0) {
+    throw new ArtifactError(
+      'invalid',
+      path,
+      `artifact field "${field}" is negative`,
+    );
+  }
+  return value;
+}
+
+function requirePositiveInteger(
+  record: Record<string, unknown>,
+  field: string,
+  path: string,
+): number {
+  const value = requireNumber(record, field, path);
+  if (value < 1) {
+    throw new ArtifactError(
+      'invalid',
+      path,
+      `artifact field "${field}" is not a 1-based position`,
+    );
+  }
+  return value;
 }
 
 // ---------------------------------------------------------------------------

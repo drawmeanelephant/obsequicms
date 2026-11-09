@@ -78,6 +78,77 @@ describe('bounded process runner (executable stub)', () => {
     await rm(join(script, '..'), { recursive: true, force: true });
   });
 
+  it('terminates a process whose stderr overruns its cap and keeps the collected prefix', async () => {
+    const script = await writeScript([
+      { printBytes: 256 * 1024, stream: 'stderr' },
+      { exit: 0 },
+    ]);
+    const cap = 64 * 1024;
+    const result = await runBoris(STUB, [script], {
+      cwd: tmpdir(),
+      limits: { stderrLimitBytes: cap, deadlineMs: 10_000, killGraceMs: 200 },
+    });
+    expect(result.outcome).toBe('terminated');
+    expect(result.overranOutput).toBe(true);
+    expect(result.truncatedStderr).toBe(true);
+    expect(result.stderrBytes).toBe(cap);
+    await rm(join(script, '..'), { recursive: true, force: true });
+  });
+
+  it('delivers every configured stdout byte when the parent cap is not exceeded', async () => {
+    // The producer must complete its writes before exiting: a stub that
+    // queues writes and exits immediately loses whatever the pipe had not
+    // accepted, so the configured byte count guarantees nothing.
+    const bytes = 1024 * 1024;
+    const script = await writeScript([
+      { printBytes: bytes, stream: 'stdout' },
+      { exit: 0 },
+    ]);
+    const result = await runBoris(STUB, [script], {
+      cwd: tmpdir(),
+      limits: { stdoutLimitBytes: bytes, deadlineMs: 30_000, killGraceMs: 200 },
+    });
+    expect(result.outcome).toBe('success');
+    expect(result.truncatedStdout).toBe(false);
+    expect(result.overranOutput).toBe(false);
+    expect(result.stdoutBytes).toBe(bytes);
+    expect(result.stdout).toMatch(/^x+$/);
+    await rm(join(script, '..'), { recursive: true, force: true });
+  });
+
+  it('delivers every configured stderr byte when the parent cap is not exceeded', async () => {
+    const bytes = 1024 * 1024;
+    const script = await writeScript([
+      { printBytes: bytes, stream: 'stderr' },
+      { exit: 0 },
+    ]);
+    const result = await runBoris(STUB, [script], {
+      cwd: tmpdir(),
+      limits: { stderrLimitBytes: bytes, deadlineMs: 30_000, killGraceMs: 200 },
+    });
+    expect(result.outcome).toBe('success');
+    expect(result.truncatedStderr).toBe(false);
+    expect(result.overranOutput).toBe(false);
+    expect(result.stderrBytes).toBe(bytes);
+    expect(result.stderr).toMatch(/^x+$/);
+    await rm(join(script, '..'), { recursive: true, force: true });
+  });
+
+  it('terminates a flushed producer at the default output caps', async () => {
+    // A producer that completes its writes must still trip the default
+    // 16 MiB caps; a producer that drops queued bytes proves nothing.
+    const script = await writeScript([
+      { printBytes: 17 * 1024 * 1024, stream: 'stdout' },
+      { exit: 0 },
+    ]);
+    const result = await runBoris(STUB, [script], { cwd: tmpdir() });
+    expect(result.outcome).toBe('terminated');
+    expect(result.overranOutput).toBe(true);
+    expect(result.truncatedStdout).toBe(true);
+    expect(result.stdoutBytes).toBe(16 * 1024 * 1024);
+    await rm(join(script, '..'), { recursive: true, force: true });
+  });
+
   it('escalates to SIGKILL when a terminated process ignores SIGTERM', async () => {
     const script = await writeScript([
       { ignoreSigterm: true },

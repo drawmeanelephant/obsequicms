@@ -16,6 +16,7 @@ import {
 import {
   prepareFreshOutputPath,
   prepareFreshReportFile,
+  resolveContainedPath,
   type JobWorkspace,
 } from './workspace.js';
 import {
@@ -62,7 +63,7 @@ export const REPORT_PATHS = {
 export const PROFILE_PATH = 'boris.json';
 export const CONTENT_INPUT = 'content';
 
-export type OperationResult<T> = {
+export type OperationResult<T, F = never> = {
   /** The bounded process result (outcome, exit code, streams, truncation). */
   process: RunResult;
   /**
@@ -71,6 +72,15 @@ export type OperationResult<T> = {
    * leaves this null and never reads files left by earlier runs.
    */
   artifacts: T | null;
+  /**
+   * The fresh failure report a content outcome published, when the
+   * operation's producer contracts one (IR build and the HTML report path
+   * publish reports on content failure; graph-dependent analysis does
+   * not). It carries located diagnostics for later consumers and never
+   * represents a valid graph — artifacts stays null beside it. Null when
+   * the outcome contracts no report or none was freshly written.
+   */
+  failureReport: F | null;
 };
 
 export type IdentityResult = {
@@ -130,33 +140,54 @@ export async function readIdentity(
 /**
  * Index Markdown source: `build --input content --out .obsequious/ir`.
  * The IR output directory is emptied before the run so an earlier run's
- * artifacts can never be read as the new run's evidence. On any
- * non-success outcome the operation returns the process result without
- * reading artifacts — a failed run never yields a current valid graph from
- * old files.
+ * artifacts can never be read as the new run's evidence. On a content
+ * outcome the compiler publishes a fresh failure report with located
+ * diagnostics, which this operation parses and exposes as `failureReport` —
+ * never as artifacts, so a failed run cannot yield a current valid graph
+ * from old files.
  */
 export async function indexSource(
   executable: string,
   workspace: JobWorkspace,
   limits?: Partial<RunLimits>,
-): Promise<OperationResult<{
-  manifest: BorisIrManifest;
-  graph: BorisIrGraph;
-  completion: BorisCompletionIndex;
-  buildReport: BorisIrBuildReport;
-}>> {
+): Promise<
+  OperationResult<
+    {
+      manifest: BorisIrManifest;
+      graph: BorisIrGraph;
+      completion: BorisCompletionIndex;
+      buildReport: BorisIrBuildReport;
+    },
+    BorisIrBuildReport
+  >
+> {
   await prepareFreshOutputPath(workspace.root, REPORT_PATHS.irDir);
   const process_ = await runBoris(
     executable,
     ['build', '--input', CONTENT_INPUT, '--out', REPORT_PATHS.irDir],
     { cwd: workspace.root, limits },
   );
+  if (process_.outcome === 'content') {
+    return {
+      process: process_,
+      artifacts: null,
+      failureReport: await readFreshIrFailureReport(workspace),
+    };
+  }
   if (process_.outcome !== 'success') {
-    return { process: process_, artifacts: null };
+    return { process: process_, artifacts: null, failureReport: null };
   }
   const irDir = join(workspace.root, REPORT_PATHS.irDir);
-  // Read all four artifacts; on a successful run any missing one is a
-  // contract violation, never a partial success.
+  // Containment-verify every artifact file path before reading (R1 rule:
+  // reads never follow symlinked components out of the workspace), then
+  // read all four; on a successful run any missing one is a contract
+  // violation, never a partial success.
+  await Promise.all([
+    resolveContainedPath(workspace.root, join(REPORT_PATHS.irDir, 'manifest.json')),
+    resolveContainedPath(workspace.root, join(REPORT_PATHS.irDir, 'graph.json')),
+    resolveContainedPath(workspace.root, join(REPORT_PATHS.irDir, 'completion.json')),
+    resolveContainedPath(workspace.root, join(REPORT_PATHS.irDir, 'build-report.json')),
+  ]);
   const [manifest, graph, completion, buildReport] = await Promise.all([
     readIrManifest(irDir),
     readIrGraph(irDir),
@@ -170,32 +201,135 @@ export async function indexSource(
       'build report is not ok on a successful process run',
     );
   }
-  return { process: process_, artifacts: { manifest, graph, completion, buildReport } };
+  return {
+    process: process_,
+    artifacts: { manifest, graph, completion, buildReport },
+    failureReport: null,
+  };
+}
+
+/**
+ * Reads the failure report a content-outcome IR build freshly published
+ * (docs/boris-integration.md: "On content failure, IR publishes a failure
+ * report without graph-dependent artifacts"). A report claiming ok on a
+ * content outcome is a producer contradiction and is rejected; a report
+ * the producer did not write leaves null — the process result carries the
+ * outcome either way. The report path was emptied before the run, so any
+ * file read here is from this run, never an earlier one.
+ */
+async function readFreshIrFailureReport(
+  workspace: JobWorkspace,
+): Promise<BorisIrBuildReport | null> {
+  const reportPath = join(workspace.root, REPORT_PATHS.irDir, 'build-report.json');
+  let report: BorisIrBuildReport;
+  try {
+    // Containment-verify the exact artifact file path, then read through
+    // the dir-based reader, which derives the same path.
+    await resolveContainedPath(workspace.root, reportPath);
+    report = await readIrBuildReport(join(workspace.root, REPORT_PATHS.irDir));
+  } catch (error) {
+    if (error instanceof ArtifactError && error.kind === 'missing') {
+      return null;
+    }
+    throw error;
+  }
+  if (report.ok) {
+    throw new ArtifactError(
+      'invalid',
+      reportPath,
+      'build report claims ok on a content outcome',
+    );
+  }
+  return report;
+}
+
+/**
+ * Resolves one of the fixed report/output paths inside the workspace with
+ * the filesystem containment rule (workspace.ts) before any artifact read,
+ * so evidence is never taken from a path that reaches outside the
+ * workspace through a symlinked component.
+ */
+async function containedPath(
+  workspace: JobWorkspace,
+  relativePath: string,
+): Promise<string> {
+  return resolveContainedPath(workspace.root, relativePath);
+}
+
+/**
+ * Reads the failure report a content-outcome HTML-path run freshly
+ * published (upstream cli.md: `build`/`validate` write the report on both
+ * success and failure). A report claiming ok on a content outcome is a
+ * producer contradiction and is rejected; a missing report leaves null —
+ * the process result carries the outcome either way.
+ */
+async function readFreshHtmlFailureReport(
+  workspace: JobWorkspace,
+  reportPath: string,
+): Promise<BorisHtmlBuildReport | null> {
+  let report: BorisHtmlBuildReport;
+  try {
+    report = await readHtmlBuildReport(reportPath);
+  } catch (error) {
+    if (error instanceof ArtifactError && error.kind === 'missing') {
+      return null;
+    }
+    throw error;
+  }
+  if (report.ok) {
+    throw new ArtifactError(
+      'invalid',
+      reportPath,
+      'HTML report claims ok on a content outcome',
+    );
+  }
+  return report;
 }
 
 /**
  * Build preview artifacts: `build --profile boris.json --report
  * .obsequious/html.json`. The report file is removed before the run; the
  * HTML output tree is compiler-owned and is not rewritten by the adapter.
+ * A content outcome exposes the fresh failure report as `failureReport`,
+ * never as artifacts.
  */
 export async function buildPreview(
   executable: string,
   workspace: JobWorkspace,
   limits?: Partial<RunLimits>,
-): Promise<OperationResult<{ report: BorisHtmlBuildReport }>> {
+): Promise<
+  OperationResult<{ report: BorisHtmlBuildReport }, BorisHtmlBuildReport>
+> {
   await prepareFreshReportFile(workspace.root, REPORT_PATHS.html);
   const process_ = await runBoris(
     executable,
     ['build', '--profile', PROFILE_PATH, '--report', REPORT_PATHS.html],
     { cwd: workspace.root, limits },
   );
+  if (process_.outcome === 'content') {
+    return {
+      process: process_,
+      artifacts: null,
+      failureReport: await readFreshHtmlFailureReport(
+        workspace,
+        await containedPath(workspace, REPORT_PATHS.html),
+      ),
+    };
+  }
   if (process_.outcome !== 'success') {
-    return { process: process_, artifacts: null };
+    return { process: process_, artifacts: null, failureReport: null };
   }
   const report = await readHtmlBuildReport(
-    join(workspace.root, REPORT_PATHS.html),
+    await containedPath(workspace, REPORT_PATHS.html),
   );
-  return { process: process_, artifacts: { report } };
+  if (!report.ok) {
+    throw new ArtifactError(
+      'invalid',
+      join(workspace.root, REPORT_PATHS.html),
+      'HTML report is not ok on a successful process run',
+    );
+  }
+  return { process: process_, artifacts: { report }, failureReport: null };
 }
 
 /**
@@ -203,13 +337,16 @@ export async function buildPreview(
  * --report .obsequious/validate.json`. Zero-write apart from the report.
  * An unsupported profile declaration (editions, per-target rss or llms,
  * multi-target sitemap or publication metadata) arrives as a usage outcome
- * whose stderr names the declaration — surfaced, never dropped.
+ * whose stderr names the declaration — surfaced, never dropped. A content
+ * outcome exposes the fresh failure report as `failureReport`.
  */
 export async function validateProfile(
   executable: string,
   workspace: JobWorkspace,
   limits?: Partial<RunLimits>,
-): Promise<OperationResult<{ report: BorisHtmlBuildReport }>> {
+): Promise<
+  OperationResult<{ report: BorisHtmlBuildReport }, BorisHtmlBuildReport>
+> {
   await prepareFreshReportFile(workspace.root, REPORT_PATHS.validate);
   const process_ = await runBoris(
     executable,
@@ -217,21 +354,42 @@ export async function validateProfile(
     { cwd: workspace.root, limits },
   );
   // The validator signals declaration refusal with exit 2 (usage) and no
-  // report; a successful validation writes the report.
+  // report; a content outcome publishes the failure report.
+  if (process_.outcome === 'content') {
+    return {
+      process: process_,
+      artifacts: null,
+      failureReport: await readFreshHtmlFailureReport(
+        workspace,
+        await containedPath(workspace, REPORT_PATHS.validate),
+      ),
+    };
+  }
   if (process_.outcome !== 'success') {
-    return { process: process_, artifacts: null };
+    return { process: process_, artifacts: null, failureReport: null };
   }
   const report = await readHtmlBuildReport(
-    join(workspace.root, REPORT_PATHS.validate),
+    await containedPath(workspace, REPORT_PATHS.validate),
   );
-  return { process: process_, artifacts: { report } };
+  if (!report.ok) {
+    throw new ArtifactError(
+      'invalid',
+      join(workspace.root, REPORT_PATHS.validate),
+      'HTML report is not ok on a successful process run',
+    );
+  }
+  return { process: process_, artifacts: { report }, failureReport: null };
 }
 
 /**
  * Graph health: `check --input content --format json --report
  * .obsequious/check.json`. Check findings are structured results, not
- * process failures: exit 0 with findings and exit 1 with an opted-in
- * policy finding are both valid report carriers.
+ * process failures: exit 0 with findings is a valid report carrier. The
+ * fixed argv does not opt into a findings-failure policy, and per the
+ * upstream contract a content or graph failure publishes no analysis
+ * report — so a content outcome returns the process result alone and never
+ * attempts the report read that would misclassify it as a missing
+ * artifact.
  */
 export async function checkGraph(
   executable: string,
@@ -254,19 +412,21 @@ export async function checkGraph(
     ],
     { cwd: workspace.root, limits },
   );
-  if (process_.outcome !== 'success' && process_.outcome !== 'content') {
-    return { process: process_, artifacts: null };
+  if (process_.outcome !== 'success') {
+    return { process: process_, artifacts: null, failureReport: null };
   }
   const report = await readDocumentationIntelligenceReport(
-    join(workspace.root, REPORT_PATHS.check),
+    await containedPath(workspace, REPORT_PATHS.check),
   );
-  return { process: process_, artifacts: { report } };
+  return { process: process_, artifacts: { report }, failureReport: null };
 }
 
 /**
  * Impact: `impact <entity-id> --input content --format json --report
  * .obsequious/impact.json`. The entity id passes the argv-safety boundary
- * and is otherwise treated as opaque compiler text.
+ * and is otherwise treated as opaque compiler text. Content outcomes
+ * return the process result alone: no analysis report is published for a
+ * graph failure, so the read attempt never happens.
  */
 export async function impactOf(
   executable: string,
@@ -292,11 +452,11 @@ export async function impactOf(
     ],
     { cwd: workspace.root, limits },
   );
-  if (process_.outcome !== 'success' && process_.outcome !== 'content') {
-    return { process: process_, artifacts: null };
+  if (process_.outcome !== 'success') {
+    return { process: process_, artifacts: null, failureReport: null };
   }
   const report = await readDocumentationIntelligenceReport(
-    join(workspace.root, REPORT_PATHS.impact),
+    await containedPath(workspace, REPORT_PATHS.impact),
   );
-  return { process: process_, artifacts: { report } };
+  return { process: process_, artifacts: { report }, failureReport: null };
 }

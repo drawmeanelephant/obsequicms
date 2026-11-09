@@ -216,6 +216,237 @@ describe('adapter against real captured producer artifacts', () => {
   });
 });
 
+describe('documentation-intelligence report bodies', () => {
+  it('preserves the full captured check report payload', async () => {
+    const report = parseDocumentationIntelligenceReport(
+      await readCaptured('check.json'),
+      'captured/check.json',
+    );
+    expect(report.input).toBe('content');
+    expect(report.summary).toEqual({
+      pages: 4,
+      roots: 1,
+      satellites: 3,
+      sourceEndpoints: 1,
+      edgeCounts: {
+        incoming: {
+          pages: { parent: 3, include: 0, reference: 4 },
+          sources: { parent: 0, include: 1, reference: 0 },
+        },
+        outgoing: {
+          pages: { parent: 3, include: 1, reference: 4 },
+          sources: { parent: 0, include: 0, reference: 0 },
+        },
+      },
+      unreferencedPages: 1,
+      hotspots: 0,
+    });
+    expect(report.nodes).toEqual([
+      { type: 'page', id: 'about', sourcePath: 'about.md', parent: 'index' },
+      {
+        type: 'page',
+        id: 'guides/ferns',
+        sourcePath: 'guides/ferns.md',
+        parent: 'index',
+      },
+      {
+        type: 'page',
+        id: 'guides/ferns-care',
+        sourcePath: 'guides/ferns-care.md',
+        parent: 'guides/ferns',
+      },
+      { type: 'page', id: 'index', sourcePath: 'index.md', parent: null },
+    ]);
+    expect(report.edges).toHaveLength(8);
+    expect(report.edges).toContainEqual({
+      from: { type: 'page', value: 'guides/ferns' },
+      to: { type: 'source', value: 'includes/watering-note.md' },
+      kind: 'include',
+    });
+    expect(report.sourceLocations).toEqual([
+      {
+        type: 'page',
+        value: 'about',
+        sourcePath: 'about.md',
+        line: 1,
+        column: 1,
+      },
+      {
+        type: 'page',
+        value: 'guides/ferns',
+        sourcePath: 'guides/ferns.md',
+        line: 1,
+        column: 1,
+      },
+      {
+        type: 'page',
+        value: 'guides/ferns-care',
+        sourcePath: 'guides/ferns-care.md',
+        line: 1,
+        column: 1,
+      },
+      {
+        type: 'page',
+        value: 'index',
+        sourcePath: 'index.md',
+        line: 1,
+        column: 1,
+      },
+    ]);
+    expect(report.pages).toEqual([
+      { id: 'about', parent: 'index' },
+      { id: 'guides/ferns', parent: 'index' },
+      { id: 'guides/ferns-care', parent: 'guides/ferns' },
+      { id: 'index', parent: null },
+    ]);
+    expect(report.sources).toEqual(['includes/watering-note.md']);
+    // The compiler's actual finding, not just a header.
+    expect(report.findings).toEqual([
+      {
+        code: 'unreferenced_page',
+        type: 'page',
+        value: 'index',
+        count: 0,
+        sourcePath: 'index.md',
+        line: 1,
+        column: 1,
+      },
+    ]);
+    // A check report has no impact result.
+    expect(report.impact).toBeNull();
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it('preserves the captured impact result with the actual affected pages', async () => {
+    const report = parseDocumentationIntelligenceReport(
+      await readCaptured('impact.json'),
+      'captured/impact.json',
+    );
+    expect(report.impact).toEqual([
+      { type: 'page', value: 'about' },
+      { type: 'page', value: 'guides/ferns-care' },
+      { type: 'page', value: 'index' },
+    ]);
+    // Impact reports still carry the graph-health findings.
+    expect(report.findings).toEqual([
+      {
+        code: 'unreferenced_page',
+        type: 'page',
+        value: 'index',
+        count: 0,
+        sourcePath: 'index.md',
+        line: 1,
+        column: 1,
+      },
+    ]);
+  });
+
+  it('rejects malformed analysis payloads instead of returning partial results', async () => {
+    const base = await readCaptured('check.json');
+    const mutate = (field: string, value: unknown): Record<string, unknown> => ({
+      ...(base as Record<string, unknown>),
+      [field]: value,
+    });
+    expect(() =>
+      parseDocumentationIntelligenceReport(mutate('findings', 'no'), 'p'),
+    ).toThrow(/findings is not an array/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(
+        mutate('findings', [{ type: 'page', value: 'x', count: 0 }]),
+        'p',
+      ),
+    ).toThrow(/"code" is not a string/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(
+        mutate('findings', [
+          {
+            code: 'flat_graph',
+            type: 'layout',
+            value: 'corpus',
+            count: 0,
+            sourcePath: null,
+            line: null,
+            column: null,
+          },
+        ]),
+        'p',
+      ),
+    ).toThrow(/finding type "layout" is not page, source, or graph/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(
+        mutate('findings', [
+          {
+            code: 'flat_graph',
+            type: 'graph',
+            value: 'corpus',
+            count: -1,
+            sourcePath: null,
+            line: null,
+            column: null,
+          },
+        ]),
+        'p',
+      ),
+    ).toThrow(/negative/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(mutate('impact', 'nope'), 'p'),
+    ).toThrow(/impact is neither null nor an array/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(
+        mutate('impact', [{ type: 'graph', value: 'corpus' }]),
+        'p',
+      ),
+    ).toThrow(/endpoint type "graph" is not page or source/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(mutate('nodes', 'no'), 'p'),
+    ).toThrow(/nodes is not an array/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(mutate('edges', 'no'), 'p'),
+    ).toThrow(/edges is not an array/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(
+        mutate('sourceLocations', [
+          {
+            type: 'page',
+            value: 'index',
+            sourcePath: 'index.md',
+            line: 0,
+            column: 1,
+          },
+        ]),
+        'p',
+      ),
+    ).toThrow(/1-based position/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(
+        mutate('summary', { ...(base as { summary: object }).summary, pages: -2 }),
+        'p',
+      ),
+    ).toThrow(/negative/);
+    expect(() =>
+      parseDocumentationIntelligenceReport(mutate('sources', [7]), 'p'),
+    ).toThrow(/source name is not a string/);
+  });
+
+  it('rejects unknown documentation-intelligence schema versions', async () => {
+    const base = (await readCaptured('check.json')) as Record<
+      string,
+      unknown
+    >;
+    try {
+      parseDocumentationIntelligenceReport(
+        { ...base, schemaVersion: '0.3.0' },
+        'p',
+      );
+      expect.unreachable('0.3.0 must not parse');
+    } catch (error) {
+      const artifactError = error as ArtifactError;
+      expect(artifactError.kind).toBe('unsupported_version');
+      expect(artifactError.observedVersion).toBe('0.3.0');
+    }
+  });
+});
+
 describe('adapter rejections', () => {
   const baseManifest = {
     schemaVersion: '0.2.0',
